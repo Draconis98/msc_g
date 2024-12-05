@@ -49,4 +49,39 @@ ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude_0.0'}
 ALLOWED_TASKS = ['math', 'code', 'commonsense', 'mmlu', 'super_glue']
 
 # OpenCompass configuration
-OPENCOMPASS_DIR = os.path.join(BASE_DIR, "codes/oc") 
+OPENCOMPASS_DIR = os.path.join(BASE_DIR, "codes/oc")
+
+COMMON_PATH = "/home/draco/graduation/models"
+
+MODEL_PATHS = {
+    'llama2': {
+        '7b': f"{COMMON_PATH}/Llama/Llama-2-7b-chat-hf",
+        '13b': f"{COMMON_PATH}/Llama/Llama-2-13b-chat-hf"
+    },
+    'llama3': {
+        '8b': f"{COMMON_PATH}/Llama/Meta-Llama-3-8B-Instruct"
+    },
+    'qwen1.5': {
+        '1.8b': f"{COMMON_PATH}/Qwen/Qwen1.5-1.8B-Chat",
+        '4b': f"{COMMON_PATH}/Qwen/Qwen1.5-4B-Chat",
+        '7b': f"{COMMON_PATH}/Qwen/Qwen1.5-7B-Chat",
+        '14b': f"{COMMON_PATH}/Qwen/Qwen1.5-14B-Chat"
+    },
+    'qwen2': {
+        '0.5b': f"{COMMON_PATH}/Qwen/Qwen2-0.5B-Instruct",
+        '1.5b': f"{COMMON_PATH}/Qwen/Qwen2-1.5B-Instruct",
+        '7b': f"{COMMON_PATH}/Qwen/Qwen2-7B-Instruct"
+    },
+    'mistral': {
+        '7b': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.2"
+    },
+    'gemma': {
+        '2b': f"{COMMON_PATH}/Gemma/gemma-2b-it"
+    },
+    'gemma2': {
+        '9b': f"{COMMON_PATH}/Gemma/gemma-2-9b-it"
+    },
+    'phi3': {
+        '3.8b': f"{COMMON_PATH}/Phi/Phi-3-mini-128k-instruct"
+    }
+} 
