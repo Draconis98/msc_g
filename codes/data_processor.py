@@ -1,8 +1,6 @@
 from datasets import load_dataset, concatenate_datasets, get_dataset_config_names
 from transformers import AutoTokenizer
 import logging
-import template
-import os
 from config import MODEL_PATHS
 
 from template.data_mapping import dataset_mapping
