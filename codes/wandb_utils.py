@@ -52,22 +52,4 @@ def save_sweep_config(sweep_config):
     with open(filepath, 'w') as file:
         yaml.dump(sweep_config, file, default_flow_style=False)
     
-    return sweep_filename
-
-def log_training_metrics(metrics):
-    """Log training metrics to wandb."""
-    wandb.log(metrics)
-
-def log_evaluation_results(results_path):
-    """Log evaluation results from OpenCompass to wandb."""
-    if os.path.exists(results_path):
-        with open(results_path, 'r') as f:
-            results = yaml.safe_load(f)
-            wandb.log({"evaluation_results": results})
-    else:
-        wandb.log({"evaluation_status": "No results found"})
-
-def finish_wandb_run():
-    """Properly finish the current wandb run."""
-    if wandb.run is not None:
-        wandb.finish() 
+    return filepath
