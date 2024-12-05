@@ -5,6 +5,7 @@ BASE_DIR = "/home/draco/graduation"
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 SWEEP_LOGS_DIR = os.path.join(BASE_DIR, "sweep_logs")
+DATASETS_DIR = os.path.join(BASE_DIR, "datasets")
 
 # Wandb configuration
 WANDB_CONFIG = {
