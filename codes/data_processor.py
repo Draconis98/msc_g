@@ -1,7 +1,8 @@
 from datasets import load_dataset, concatenate_datasets, get_dataset_config_names
 from transformers import AutoTokenizer
 import logging
-from config import MODEL_PATHS
+import os
+from config import MODEL_PATHS, DATASETS_DIR
 
 from template.data_mapping import dataset_mapping
 
@@ -44,12 +45,11 @@ def load_and_process_data(config):
     # Load dataset
     dataset_name, dataset_split, _ = dataset_mapping[config['dataset']]
     all_configs = get_dataset_config_names(dataset_name)
+    os.makedirs(DATASETS_DIR, exist_ok=True)
     if len(all_configs) == 0:
-        dataset = load_dataset(dataset_name, split=dataset_split, trust_remote_code=True, 
-                               download_mode="reuse_cache_if_exists")
+        dataset = load_dataset(dataset_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
     else:
-        datasets_list = [load_dataset(dataset_name, config_name, split=dataset_split, trust_remote_code=True, 
-                                      download_mode="reuse_cache_if_exists") 
+        datasets_list = [load_dataset(dataset_name, config_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
                         for config_name in all_configs]
         dataset = concatenate_datasets(datasets_list)
     

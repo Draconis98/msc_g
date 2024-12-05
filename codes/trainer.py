@@ -4,6 +4,17 @@ from peft import LoraConfig, get_peft_model
 from trl import SFTConfig, SFTTrainer
 from data_processor import get_model_checkpoint
 import wandb
+import os
+from config import OUTPUT_DIR
+
+def get_output_dir(config):
+    """Get the output directory for the training."""
+    return os.path.join(
+        OUTPUT_DIR,
+        f"{config['strategy']}/{config['task']}/{config['dataset']}/" \
+        f"{config['model_name'].replace(':', '/')}/" \
+        f"{config['learning_rate']}/r{config['rank']}/{config['epochs']}epochs"
+    )
 
 def get_training_args(config, output_dir):
     """Create training arguments for the SFT trainer."""
