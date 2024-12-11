@@ -4,6 +4,7 @@ import os
 import torch
 import time
 import logging
+import wandb
 
 from config import (
     ALLOWED_MODELS, ALLOWED_STRATEGIES, ALLOWED_TASKS, TRAINING_DEFAULTS, SWEEP_LOGS_DIR
@@ -93,9 +94,14 @@ def run_sweep(args):
         print("No wandb agent command found in the log file.")
         return False
 
+    # Extract sweep ID from the agent command
+    sweep_id = last_line.split()[-1]  # Get the last part of the wandb agent command which is the sweep ID
+    
     # Run agents on available GPUs
     wandb_agent_command = last_line.split(": ")[-1].strip()
     print(f"wandb agent command: {wandb_agent_command}")
+    
+    api = wandb.Api()
     
     for gpu_id in range(2):
         runtime_log_filename = os.path.join(
@@ -109,11 +115,18 @@ def run_sweep(args):
             print(f"Task started on GPU{gpu_id}.")
             
         time.sleep(10)
-        with open(runtime_log_filename, 'r') as runtime_log_file:
-            if any("Running runs: []" in line for line in runtime_log_file):
+        
+        # Check sweep status using wandb API
+        try:
+            sweep = api.sweep(sweep_id)
+            if sweep.state == "finished" or len(sweep.runs) == 0:
                 break
-    
-    return True
+        except Exception as e:
+            print(f"Error checking sweep status: {e}")
+            # Fallback to log file check if API fails
+            with open(runtime_log_filename, 'r') as runtime_log_file:
+                if any("Running runs: []" in line for line in runtime_log_file):
+                    break
 
 if __name__ == "__main__":
     args = parse_args()
