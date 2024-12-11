@@ -37,6 +37,7 @@ ALLOWED_MODELS = {
     'llama3': ['8b'],
     'qwen1.5': ['1.8b', '4b', '7b', '14b'],
     'qwen2': ['0.5b', '1.5b', '7b'],
+    'qwen2.5': ['0.5b'],
     'mistral': ['7b'],
     'gemma': ['2b'],
     'gemma2': ['9b'],
@@ -72,6 +73,9 @@ MODEL_PATHS = {
         '0.5b': f"{COMMON_PATH}/Qwen/Qwen2-0.5B-Instruct",
         '1.5b': f"{COMMON_PATH}/Qwen/Qwen2-1.5B-Instruct",
         '7b': f"{COMMON_PATH}/Qwen/Qwen2-7B-Instruct"
+    },
+    'qwen2.5': {
+        '0.5b': f"{COMMON_PATH}/Qwen/Qwen2.5-0.5B-Instruct"
     },
     'mistral': {
         '7b': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.2"
