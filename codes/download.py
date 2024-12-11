@@ -57,7 +57,8 @@ def download_model(model_id, target_dir=None, exclude_files=None, resume=True):
             repo_id=model_id,
             local_dir=target_dir,
             endpoint="https://hf-mirror.com",
-            ignore_patterns=exclude_files
+            ignore_patterns=exclude_files,
+            max_workers=1
         )
         logging.info(f"Successfully downloaded {model_id}")
         
