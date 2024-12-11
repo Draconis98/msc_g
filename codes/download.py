@@ -1,10 +1,36 @@
 import os
 import logging
 import argparse
-from huggingface_hub import snapshot_download
-from config import MODELS_DIR
+import sys
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+# Check if huggingface_hub is installed
+try:
+    from huggingface_hub import snapshot_download
+except ImportError:
+    logging.warning("Package 'huggingface_hub' is not installed.")
+    while True:
+        response = input("Would you like to install it now? (y/n): ").lower().strip()
+        if response in ['y', 'n']:
+            break
+        print("Please enter 'y' or 'n'")
+    
+    if response == 'y':
+        import subprocess
+        try:
+            logging.info("Installing huggingface_hub...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "huggingface_hub"])
+            from huggingface_hub import snapshot_download
+            logging.info("Successfully installed huggingface_hub")
+        except subprocess.CalledProcessError as e:
+            logging.error("Failed to install huggingface_hub. Please install it manually using:")
+            logging.error("pip install huggingface_hub")
+            sys.exit(1)
+    else:
+        logging.info("Please install huggingface_hub manually using:")
+        logging.info("pip install huggingface_hub")
+        sys.exit(1)
 
 def download_model(model_id, target_dir=None, exclude_files=None, resume=True):
     """
