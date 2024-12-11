@@ -57,7 +57,6 @@ def download_model(model_id, target_dir=None, exclude_files=None, resume=True):
             repo_id=model_id,
             local_dir=target_dir,
             local_dir_use_symlinks=False,
-            resume_download=resume,
             endpoint="https://hf-mirror.com",
             ignore_patterns=exclude_files
         )
