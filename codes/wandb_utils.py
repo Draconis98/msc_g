@@ -19,7 +19,7 @@ def create_sweep_config(args):
     sweep_config = {
         'entity': WANDB_CONFIG["entity"],
         'project': WANDB_CONFIG["project"],
-        'program': '/home/draco/graduation/codes/main.py',
+        'program': '/home/draco/graduation/codes/pipeline.py',
         'method': 'grid',
         'parameters': {
             key: {'values': [getattr(args, key)] if not isinstance(getattr(args, key), list) else getattr(args, key)}
