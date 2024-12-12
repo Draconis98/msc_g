@@ -17,6 +17,7 @@ def setup_wandb_run(config):
 def create_sweep_config(args):
     """Create a wandb sweep configuration from command line arguments."""
     sweep_config = {
+        'entity': WANDB_CONFIG["entity"],
         'project': WANDB_CONFIG["project"],
         'program': '/home/draco/graduation/codes/main.py',
         'method': 'grid',
@@ -51,5 +52,3 @@ def save_sweep_config(sweep_config):
     
     with open(filepath, 'w') as file:
         yaml.dump(sweep_config, file, default_flow_style=False)
-    
-    return filepath

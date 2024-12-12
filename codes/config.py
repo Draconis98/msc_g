@@ -10,7 +10,7 @@ DATASETS_DIR = os.path.join(BASE_DIR, "datasets")
 # Wandb configuration
 WANDB_CONFIG = {
     "project": "graduation-project",
-    "entity": "draco98h",
+    "entity": "draco98",
 }
 
 # Training defaults
