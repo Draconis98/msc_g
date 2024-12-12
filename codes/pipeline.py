@@ -91,14 +91,6 @@ def main():
     trainer = setup_training(config, tokenizer, processed_dataset, output_dir)
     train_model(trainer, output_dir, tokenizer)
     
-    # Free up GPU memory
-    if trainer.model is not None:
-        trainer.model.cpu()
-        del trainer.model
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    logging.info("Freed model from GPU memory")
-    
     # Setup and run evaluation
     logging.info(f"Setting up evaluation...")
     evaluator = setup_evaluator(config, output_dir)
