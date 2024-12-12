@@ -5,7 +5,7 @@ from trl import SFTConfig, SFTTrainer
 from data_processor import get_model_checkpoint
 import wandb
 import os
-from config import OUTPUT_DIR
+from utils.config import OUTPUT_DIR
 
 def get_output_dir(config):
     """Get the output directory for the training."""

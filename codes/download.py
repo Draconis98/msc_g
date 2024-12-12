@@ -3,7 +3,7 @@ import logging
 import argparse
 import sys
 
-from config import MODELS_DIR
+from utils.config import MODELS_DIR
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 # Check if huggingface_hub is installed

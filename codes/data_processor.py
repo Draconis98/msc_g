@@ -2,7 +2,7 @@ from datasets import load_dataset, concatenate_datasets, get_dataset_config_name
 from transformers import AutoTokenizer
 import logging
 import os
-from config import MODEL_PATHS, DATASETS_DIR
+from utils.config import MODEL_PATHS, DATASETS_DIR
 
 from template.data_mapping import dataset_mapping
 

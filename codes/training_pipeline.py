@@ -1,7 +1,7 @@
 import os
 import logging
 import wandb
-from utils import set_seed, create_run_name, setup_logging, ensure_dir
+from utils.misc import set_seed, create_run_name, setup_logging, ensure_dir
 from data_processor import load_and_process_data
 from trainer import setup_training, train_model, get_output_dir
 

@@ -1,7 +1,7 @@
 import os
 import logging
 from evaluator import setup_evaluator
-from config import OPENCOMPASS_DIR
+from utils.config import OPENCOMPASS_DIR
 
 class EvaluationPipeline:
     """Manages the evaluation pipeline."""

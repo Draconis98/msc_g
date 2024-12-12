@@ -1,10 +1,10 @@
 import logging
 import wandb
-from config import ConfigManager
+from utils.config import ConfigManager
 from training_pipeline import TrainingPipeline
 from evaluation_pipeline import EvaluationPipeline
 from result_processor import ResultProcessor
-from utils import setup_logging
+from utils.misc import setup_logging
 
 def main():
     """Main pipeline execution."""

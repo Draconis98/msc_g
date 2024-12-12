@@ -1,5 +1,5 @@
 import argparse
-from config import (
+from utils.config import (
     ALLOWED_MODELS, ALLOWED_STRATEGIES, ALLOWED_TASKS, TRAINING_DEFAULTS
 )
 

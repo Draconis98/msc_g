@@ -1,6 +1,6 @@
 import os
 import wandb
-from config import OPENCOMPASS_DIR
+from utils.config import OPENCOMPASS_DIR
 
 def get_model_config(config, output_dir):
     """Generate model configuration for OpenCompass."""

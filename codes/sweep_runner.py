@@ -2,9 +2,9 @@ import os
 import time
 import logging
 import wandb
-from config import SWEEP_LOGS_DIR
-from gpu_utils import is_gpu_free
-from wandb_utils import create_sweep_config, save_sweep_config
+from utils.config import SWEEP_LOGS_DIR
+from utils.gpu import is_gpu_free
+from utils.wandb import create_sweep_config, save_sweep_config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

@@ -2,7 +2,7 @@ import wandb
 import os
 import yaml
 from datetime import datetime
-from config import WANDB_CONFIG, SWEEP_LOGS_DIR
+from .config import WANDB_CONFIG, SWEEP_LOGS_DIR
 
 def setup_wandb_run(config):
     """Initialize a new wandb run with given configuration."""
@@ -51,4 +51,4 @@ def save_sweep_config(sweep_config):
     filepath = os.path.join(SWEEP_LOGS_DIR, sweep_filename)
     
     with open(filepath, 'w') as file:
-        yaml.dump(sweep_config, file, default_flow_style=False)
+        yaml.dump(sweep_config, file, default_flow_style=False) 
