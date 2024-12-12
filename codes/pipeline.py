@@ -1,6 +1,6 @@
 import logging
 import wandb
-from config_manager import ConfigManager
+from config import ConfigManager
 from training_pipeline import TrainingPipeline
 from evaluation_pipeline import EvaluationPipeline
 from result_processor import ResultProcessor
