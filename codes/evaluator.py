@@ -18,7 +18,7 @@ def get_model_config(config, output_dir):
         },
         'max_out_len': 50,
         'max_seq_len': 1024,
-        'batch_size': 16,
+        'batch_size': 32,
         'run_cfg': {'num_gpus': 1, 'num_procs': 1},
     }
 
