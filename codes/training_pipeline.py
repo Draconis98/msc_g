@@ -1,7 +1,7 @@
 import os
 import logging
 import wandb
-from utils.misc import set_seed, create_run_name, setup_logging, ensure_dir
+from utils.misc import create_run_name, ensure_dir
 from data_processor import load_and_process_data
 from trainer import setup_training, train_model, get_output_dir
 
@@ -18,19 +18,12 @@ class TrainingPipeline:
         
     def setup(self):
         """Setup training environment and resources."""
-        # Set random seed
-        set_seed(self.config['seed'])
-        
         # Setup wandb run name
         wandb.run.name = create_run_name(self.config)
         
         # Setup output directory
         self.output_dir = get_output_dir(self.config)
         ensure_dir(os.path.join(self.output_dir, "eval"))
-        
-        # Setup logging
-        log_file = os.path.join(self.output_dir, "peft.log")
-        setup_logging(log_file)
         
         logging.info("Training pipeline setup completed")
         

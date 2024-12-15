@@ -1,7 +1,7 @@
 import logging
 from argument_parser import parse_args
 from sweep_runner import run_sweep, setup_environment
-
+from utils.misc import set_seed
 def main():
     """Main entry point of the application."""
     # Setup logging
@@ -18,6 +18,9 @@ def main():
         # Setup environment (e.g., mirror configuration)
         logging.info("Setting up environment...")
         setup_environment(args.use_mirror)
+        
+        # Setup seed
+        set_seed(args.seed)
         
         # Run the sweep
         logging.info("Starting sweep...")

@@ -76,13 +76,7 @@ def setup_model(config):
     return model
 
 def setup_training(config, tokenizer, processed_dataset, output_dir):
-    """Setup complete training environment."""
-    # Set random seeds for reproducibility
-    if 'seed' in config:
-        torch.manual_seed(config['seed'])
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(config['seed'])
-    
+    """Setup complete training environment."""    
     # Setup model
     model = setup_model(config)
     
