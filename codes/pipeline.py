@@ -1,7 +1,7 @@
 import logging
 import wandb
 from utils.config import ConfigManager
-from training_pipeline import TrainingPipeline
+from training import TrainingPipeline
 from evaluation_pipeline import EvaluationPipeline
 from result_processor import ResultProcessor
 from utils.misc import setup_logging
@@ -38,6 +38,11 @@ def main():
         
         logging.info("Pipeline completed successfully")
         
+        try:
+            wandb.finish()
+        except Exception as e:
+            logging.error(f"Failed to finish wandb run: {str(e)}")
+            
     except Exception as e:
         logging.error(f"Pipeline failed: {str(e)}")
         raise
