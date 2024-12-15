@@ -47,7 +47,7 @@ ALLOWED_MODELS = {
 }
 
 # Training strategies
-ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude_0.0'}
+ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude'}
 
 # Tasks and datasets
 ALLOWED_TASKS = ['math', 'code', 'commonsense', 'mmlu', 'super_glue']
