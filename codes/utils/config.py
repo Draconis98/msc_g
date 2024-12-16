@@ -37,9 +37,9 @@ TRAINING_DEFAULTS = {
 ALLOWED_MODELS = {
     'llama2': ['7b', '13b'],
     'llama3': ['8b'],
-    'qwen1.5': ['1.8b', '4b', '7b', '14b'],
+    'qwen1.5': ['1.8b', '4b', '7b', '14b', '32b'],
     'qwen2': ['0.5b', '1.5b', '7b'],
-    'qwen2.5': ['0.5b'],
+    'qwen2.5': ['0.5b', '1.5b', '3b', '7b', '14b', '32b'],
     'mistral': ['7b'],
     'gemma': ['2b'],
     'gemma2': ['9b'],
@@ -69,7 +69,8 @@ MODEL_PATHS = {
         '1.8b': f"{COMMON_PATH}/Qwen/Qwen1.5-1.8B-Chat",
         '4b': f"{COMMON_PATH}/Qwen/Qwen1.5-4B-Chat",
         '7b': f"{COMMON_PATH}/Qwen/Qwen1.5-7B-Chat",
-        '14b': f"{COMMON_PATH}/Qwen/Qwen1.5-14B-Chat"
+        '14b': f"{COMMON_PATH}/Qwen/Qwen1.5-14B-Chat",
+        '32b': f"{COMMON_PATH}/Qwen/Qwen1.5-32B-Chat"
     },
     'qwen2': {
         '0.5b': f"{COMMON_PATH}/Qwen/Qwen2-0.5B-Instruct",
@@ -77,7 +78,12 @@ MODEL_PATHS = {
         '7b': f"{COMMON_PATH}/Qwen/Qwen2-7B-Instruct"
     },
     'qwen2.5': {
-        '0.5b': f"{COMMON_PATH}/Qwen/Qwen2.5-0.5B-Instruct"
+        '0.5b': f"{COMMON_PATH}/Qwen/Qwen2.5-0.5B-Instruct",
+        '1.5b': f"{COMMON_PATH}/Qwen/Qwen2.5-1.5B-Instruct",
+        '3b': f"{COMMON_PATH}/Qwen/Qwen2.5-3B-Instruct",
+        '7b': f"{COMMON_PATH}/Qwen/Qwen2.5-7B-Instruct",
+        '14b': f"{COMMON_PATH}/Qwen/Qwen2.5-14B-Instruct",
+        '32b': f"{COMMON_PATH}/Qwen/Qwen2.5-32B-Instruct"
     },
     'mistral': {
         '7b': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.2"
