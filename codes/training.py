@@ -5,18 +5,9 @@ import torch
 from transformers import AutoModelForCausalLM
 from peft import LoraConfig, get_peft_model
 from trl import SFTConfig, SFTTrainer
-from utils.misc import create_run_name, ensure_dir
-from utils.config import OUTPUT_DIR
+from utils.misc import create_run_name, ensure_dir, get_output_dir
+from utils.gpu import cleanup_gpu_memory
 from data_processor import load_and_process_data, get_model_checkpoint
-
-def get_output_dir(config):
-    """Get the output directory for the training."""
-    return os.path.join(
-        OUTPUT_DIR,
-        f"{config['strategy']}/{config['task']}/{config['dataset']}/" \
-        f"{config['model_name'].replace(':', '/')}/" \
-        f"{config['learning_rate']}/r{config['rank']}/{config['epochs']}epochs"
-    )
 
 class TrainingPipeline:
     """Manages the training pipeline."""
@@ -28,6 +19,23 @@ class TrainingPipeline:
         self.tokenizer = None
         self.processed_dataset = None
         self.trainer = None
+        
+    def __del__(self):
+        """Cleanup resources when the object is destroyed."""
+        if hasattr(self, 'trainer') and self.trainer is not None:
+            if hasattr(self.trainer, 'model'):
+                # Delete the model explicitly
+                del self.trainer.model
+            del self.trainer
+            
+        if hasattr(self, 'tokenizer') and self.tokenizer is not None:
+            del self.tokenizer
+            
+        if hasattr(self, 'processed_dataset') and self.processed_dataset is not None:
+            del self.processed_dataset
+
+        # clear gpu memory
+        cleanup_gpu_memory()
         
     def setup(self):
         """Setup training environment and resources."""
@@ -151,7 +159,6 @@ class TrainingPipeline:
             self.prepare_data()
             self.setup_trainer()
             self.train()
-            return self.output_dir
         except Exception as e:
             logging.error(f"Training pipeline failed: {str(e)}")
             raise
