@@ -32,7 +32,7 @@ class SweepRunner:
             
             # Wait for sweep to be created
             logging.info("Waiting for sweep to be initialized...")
-            time.sleep(10)
+            time.sleep(2)
         except Exception as e:
             logging.error(f"Failed to setup sweep: {str(e)}")
             raise
@@ -53,7 +53,7 @@ class SweepRunner:
             logging.info(f"Started agent on GPU{gpu_id}")
             
             # Give the agent some time to start
-            time.sleep(5)
+            time.sleep(1)
             
         except Exception as e:
             logging.error(f"Failed to start agent on GPU{gpu_id}: {str(e)}")
