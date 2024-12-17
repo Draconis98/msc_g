@@ -1,6 +1,8 @@
+"""Configuration management module for the training pipeline."""
+
 import os
-import wandb
 import logging
+import wandb
 
 # Base paths
 BASE_DIR = "/home/draco/graduation"
@@ -173,7 +175,7 @@ class ConfigManager:
         """Log configuration parameters."""
         logging.info("Current configuration:")
         for key, value in config.items():
-            logging.info(f"  {key}: {value}")
+            logging.info("  %s: %s", key, value)
             
     @staticmethod
     def update_config(config, updates):
@@ -181,7 +183,7 @@ class ConfigManager:
         for key, value in updates.items():
             if key in config:
                 config[key] = value
-                logging.info(f"Updated {key} to {value}")
+                logging.info("Updated %s to %s", key, value)
             else:
-                logging.warning(f"Attempted to update non-existent config key: {key}")
+                logging.warning("Attempted to update non-existent config key: %s", key)
         return config 
