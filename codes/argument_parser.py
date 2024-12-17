@@ -1,3 +1,10 @@
+"""Command line argument parsing module for training configuration.
+
+This module provides functionality to parse and validate command line arguments
+for model training, including strategies, model specifications, and various
+training parameters.
+"""
+
 import argparse
 from utils.config import (
     ALLOWED_MODELS, ALLOWED_STRATEGIES, ALLOWED_TASKS, TRAINING_DEFAULTS
@@ -7,7 +14,7 @@ def parse_strategies(input_str):
     """Parse and validate comma-separated strategy list."""
     strategies = input_str.split(',')
     if not all(strategy in ALLOWED_STRATEGIES for strategy in strategies):
-        raise argparse.ArgumentTypeError(f"Invalid strategy. Each strategy must be one of {ALLOWED_STRATEGIES}.")
+        raise argparse.ArgumentTypeError("Invalid strategy. Each strategy must be one of " + str(ALLOWED_STRATEGIES))
     return strategies
 
 def parse_model(input_str):
@@ -15,10 +22,10 @@ def parse_model(input_str):
     models = input_str.split(',')
     for model in models:
         if ':' not in model:
-            raise argparse.ArgumentTypeError(f"Invalid format. Each model must be in the format 'model_name:model_size'.")
+            raise argparse.ArgumentTypeError("Invalid format. Each model must be in the format 'model_name:model_size'.")
         model_name, model_size = model.split(':')
         if model_name not in ALLOWED_MODELS or model_size not in ALLOWED_MODELS[model_name]:
-            raise argparse.ArgumentTypeError(f"Invalid model or size. Allowed models and sizes are: {ALLOWED_MODELS}.")
+            raise argparse.ArgumentTypeError("Invalid model or size. Allowed models and sizes are: " + str(ALLOWED_MODELS))
     return models
 
 def parse_list_or_int(value, type_func=int):
