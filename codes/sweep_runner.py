@@ -49,10 +49,6 @@ class SweepRunner:
             # Run agent using sweep_id
             os.system(f"CUDA_VISIBLE_DEVICES={gpu_id} nohup wandb agent {self.sweep_id} > {runtime_log_filename} 2>&1 &")
             logging.info("Started agent on GPU%d", gpu_id)
-            
-            # Give the agent some time to start
-            time.sleep(1)
-            
         except Exception as e:
             logging.error("Failed to start agent on GPU%d: %s", gpu_id, str(e))
             raise
