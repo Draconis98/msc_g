@@ -2,6 +2,7 @@ import os
 import logging
 import argparse
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 from utils.config import MODELS_DIR
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -61,18 +62,64 @@ def download_model(model_id, target_dir=None, exclude_files=None, resume=True):
             max_workers=1
         )
         logging.info(f"Successfully downloaded {model_id}")
+        return True
         
     except Exception as e:
         logging.error(f"Error downloading {model_id}: {str(e)}")
-        raise
+        return False
+
+def download_models(model_ids, target_dir=None, exclude_files=None, resume=True, max_concurrent=3, parallel=True):
+    """
+    Download multiple models either concurrently or sequentially.
+    
+    Args:
+        model_ids (list): List of model IDs to download
+        target_dir (str, optional): Base target directory
+        exclude_files (list, optional): List of file patterns to exclude
+        resume (bool, optional): Whether to resume download if interrupted
+        max_concurrent (int, optional): Maximum number of concurrent downloads
+        parallel (bool, optional): Whether to download models in parallel
+    """
+    if parallel:
+        logging.info(f"Downloading {len(model_ids)} models in parallel (max {max_concurrent} concurrent downloads)")
+        with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+            futures = []
+            for model_id in model_ids:
+                model_target_dir = os.path.join(target_dir, model_id) if target_dir else None
+                future = executor.submit(download_model, model_id, model_target_dir, exclude_files, resume)
+                futures.append((model_id, future))
+            
+            # Wait for all downloads to complete
+            for model_id, future in futures:
+                success = future.result()
+                if success:
+                    logging.info(f"Completed downloading {model_id}")
+                else:
+                    logging.error(f"Failed to download {model_id}")
+    else:
+        logging.info(f"Downloading {len(model_ids)} models sequentially")
+        for model_id in model_ids:
+            model_target_dir = os.path.join(target_dir, model_id) if target_dir else None
+            success = download_model(model_id, model_target_dir, exclude_files, resume)
+            if success:
+                logging.info(f"Completed downloading {model_id}")
+            else:
+                logging.error(f"Failed to download {model_id}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Download model from Hugging Face')
-    parser.add_argument('-m', '--model-id', type=str, required=True, help='Full model ID from Hugging Face (e.g., meta-llama/Llama-2-7b-chat-hf)')
-    parser.add_argument('-t', '--target-dir', type=str, help='Target directory to download to', default=None)
-    parser.add_argument('-e', '--except', dest='exclude_files', type=lambda x: x.split(','), help='Comma-separated list of file patterns to exclude', default=None)
+    parser = argparse.ArgumentParser(description='Download models from Hugging Face')
+    parser.add_argument('-m', '--model-ids', type=str, required=True, 
+                      help='Comma-separated list of model IDs (e.g., meta-llama/Llama-2-7b-chat-hf,facebook/opt-350m)')
+    parser.add_argument('-t', '--target-dir', type=str, help='Base target directory for downloads', default=None)
+    parser.add_argument('-e', '--except', dest='exclude_files', type=lambda x: x.split(','), 
+                      help='Comma-separated list of file patterns to exclude', default=None)
     parser.add_argument('-r', '--resume', action='store_true', help='Resume download if interrupted', default=True)
+    parser.add_argument('-c', '--concurrent', type=int, help='Maximum number of concurrent downloads', default=3)
+    parser.add_argument('-p', '--parallel', action='store_true', help='Download models in parallel', default=False)
     
     args = parser.parse_args()
     
-    download_model(args.model_id, args.target_dir, args.exclude_files, args.resume)
+    # Split model IDs string into list
+    model_ids = [mid.strip() for mid in args.model_ids.split(',')]
+    
+    download_models(model_ids, args.target_dir, args.exclude_files, args.resume, args.concurrent, args.parallel)
