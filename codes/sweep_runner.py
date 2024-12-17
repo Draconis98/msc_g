@@ -35,24 +35,6 @@ class SweepRunner:
             logging.error("Failed to setup sweep: %s", str(e))
             raise
 
-    def start_agent(self, gpu_id):
-        """Start a W&B agent on specified GPU."""
-        try:
-            runtime_log_filename = os.path.join(
-                SWEEP_LOGS_DIR,
-                f'sweep_{self.sweep_id}_gpu{gpu_id}_runtime.log'
-            )
-            
-            # Ensure logs directory exists
-            os.makedirs(SWEEP_LOGS_DIR, exist_ok=True)
-            
-            # Run agent using sweep_id
-            os.system(f"CUDA_VISIBLE_DEVICES={gpu_id} nohup wandb agent {self.sweep_id} > {runtime_log_filename} 2>&1 &")
-            logging.info("Started agent on GPU%d", gpu_id)
-        except Exception as e:
-            logging.error("Failed to start agent on GPU%d: %s", gpu_id, str(e))
-            raise
-
     def _get_expected_run_count(self):
         """Get the expected run count of the sweep."""
         try:
@@ -71,6 +53,24 @@ class SweepRunner:
         except AttributeError as e:
             logging.error("Sweep object missing expected attribute: %s", str(e))
             return False
+    
+    def _start_agent(self, gpu_id):
+        """Start a W&B agent on specified GPU."""
+        try:
+            runtime_log_filename = os.path.join(
+                SWEEP_LOGS_DIR,
+                f'sweep_{self.sweep_id}_gpu{gpu_id}_runtime.log'
+            )
+            
+            # Ensure logs directory exists
+            os.makedirs(SWEEP_LOGS_DIR, exist_ok=True)
+            
+            # Run agent using sweep_id
+            os.system(f"CUDA_VISIBLE_DEVICES={gpu_id} nohup wandb agent {self.sweep_id} > {runtime_log_filename} 2>&1 &")
+            logging.info("Started agent on GPU%d", gpu_id)
+        except Exception as e:
+            logging.error("Failed to start agent on GPU%d: %s", gpu_id, str(e))
+            raise
 
     def run(self):
         """Run the sweep on available GPUs."""
@@ -84,7 +84,7 @@ class SweepRunner:
                     break
 
                 if is_gpu_free(gpu_id):
-                    self.start_agent(gpu_id)
+                    self._start_agent(gpu_id)
                     self.expected_run_count -= 1
                 else:
                     logging.warning("GPU%d is busy, skipping...", gpu_id)
