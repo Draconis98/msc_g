@@ -2,13 +2,15 @@
 
 import os
 import logging
-import wandb
-from utils.gpu import is_gpu_free
-from utils.misc import setup_logging
-from pipeline import pipeline
-from utils.config import WANDB_CONFIG, SWEEP_LOGS_DIR
 from datetime import datetime
 import yaml
+import wandb
+
+from utils.gpu import is_gpu_free
+from utils.misc import setup_logging
+from utils.config import WANDB_CONFIG, SWEEP_LOGS_DIR
+
+from pipeline import pipeline
 
 setup_logging()
 
