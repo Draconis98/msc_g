@@ -1,12 +1,17 @@
 import torch
 import gc
+import logging
 
 def is_gpu_free(gpu_id):
     """Check if a specific GPU is free."""
-    if not torch.cuda.is_available():
-        return False
-    gpu_memory = torch.cuda.memory_reserved(gpu_id)
-    return gpu_memory == 0
+    try:
+        if not torch.cuda.is_available():
+            return False
+        gpu_memory = torch.cuda.memory_reserved(gpu_id)
+        return gpu_memory == 0
+    except (torch.cuda.CudaError, RuntimeError) as e:
+        logging.error("Failed to check GPU memory: %s", str(e))
+        raise
 
 def get_available_gpus():
     """Get a list of available GPU IDs."""

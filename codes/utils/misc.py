@@ -48,14 +48,13 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
 
-def setup_environment(use_mirror=True):
+def setup_environment(seed, use_mirror=True):
     """Setup environment variables and configurations."""
+    set_seed(seed)
+
     if use_mirror:
         os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
-    
-    # Ensure required directories exist
-    os.makedirs(SWEEP_LOGS_DIR, exist_ok=True)
-    
+
 def create_run_name(config):
     """Create a standardized run name from configuration."""
     return "{}-{}-{}-{}-{}-r{}-{}epochs-seed{}".format(

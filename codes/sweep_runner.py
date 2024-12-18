@@ -1,13 +1,14 @@
 """Module for managing and executing W&B sweeps across multiple GPUs."""
 
 import os
-import time
 import logging
 import wandb
-from utils.config import SWEEP_LOGS_DIR
 from utils.gpu import is_gpu_free
-from utils.wandb import create_sweep_config, save_sweep_config
 from utils.misc import setup_logging
+from pipeline import pipeline
+from utils.config import WANDB_CONFIG, SWEEP_LOGS_DIR
+from datetime import datetime
+import yaml
 
 setup_logging()
 
@@ -18,17 +19,63 @@ class SweepRunner:
         """Initialize SweepRunner with command line arguments."""
         self.args = args
         self.sweep_id = None
-        self.api = None
         self.sweep_config = None
+        self.sweep_path = None
         self.expected_run_count = None
         self.api = wandb.Api()
 
+    def _create_sweep_config(self):
+        """Create a wandb sweep configuration from command line arguments."""
+        try:
+            sweep_config = {
+                'entity': WANDB_CONFIG["entity"],
+                'project': WANDB_CONFIG["project"],
+            'method': 'grid',
+            'parameters': {
+                key: {'values': [getattr(self.args, key)] if not isinstance(getattr(self.args, key), list) else getattr(self.args, key)}
+                for key in [
+                    'strategy', 'model_name', 'task', 'dataset', 'eval_dataset',
+                    'learning_rate', 'learning_schedule', 'rank', 'epochs',
+                    'batch_size', 'save_steps', 'save_total_limit',
+                    'gradient_checkpointing', 'gradient_accumulation_steps',
+                    'warmup_ratio', 'packing', 'max_seq_length',
+                    'overwrite_output_dir', 'bf16', 'use_cache',
+                    'dataset_batched', 'seed'
+                ]
+            }
+        }
+        
+            # Handle target_modules separately
+            sweep_config['parameters']['target_modules'] = {
+                'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
+            }
+            
+            self.sweep_config = sweep_config
+        except Exception as e:
+            logging.error("Failed to create sweep configuration: %s", str(e))
+            raise
+    
+    def _save_sweep_config(self):
+        """Save sweep configuration to a file and return the filename."""
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            sweep_filename = f"sweep_{timestamp}.yaml"
+            
+            os.makedirs(SWEEP_LOGS_DIR, exist_ok=True)
+            filepath = os.path.join(SWEEP_LOGS_DIR, sweep_filename)
+            
+            with open(filepath, 'w', encoding='utf-8') as file:
+                yaml.dump(self.sweep_config, file, default_flow_style=False) 
+        except Exception as e:
+            logging.error("Failed to save sweep configuration: %s", str(e))
+            raise
+
     def _setup_configuration(self):
         """Setup W&B sweep configuration."""
+        self._create_sweep_config()
+        self._save_sweep_config()
+
         try:
-            self.sweep_config = create_sweep_config(self.args)
-            save_sweep_config(self.sweep_config)
-            
             # Create sweep using wandb API
             self.sweep_id = wandb.sweep(self.sweep_config, project=self.sweep_config['project'])
         except Exception as e:
@@ -38,56 +85,52 @@ class SweepRunner:
     def _get_expected_run_count(self):
         """Get the expected run count of the sweep."""
         try:
-            sweep_path = f"{self.sweep_config['project']}/{self.sweep_id}"
-            sweep = self.api.sweep(sweep_path)
-
-            self.expected_run_count = sweep.expected_run_count
+            self.sweep_path = f"{self.sweep_config['entity']}/{self.sweep_config['project']}/{self.sweep_id}"
+            self.expected_run_count = self.api.sweep(self.sweep_path).expected_run_count
             return self.expected_run_count
         
         except wandb.errors.CommError as e:
             logging.error("Network error while accessing sweep: %s", str(e))
-            return False
+            raise
         except KeyError as e:
             logging.error("Invalid sweep config: missing key %s", str(e))
-            return False
+            raise
         except AttributeError as e:
             logging.error("Sweep object missing expected attribute: %s", str(e))
-            return False
+            raise
     
-    def _start_agent(self, gpu_id):
-        """Start a W&B agent on specified GPU."""
+    def _start_agent(self, gpu_ids):
+        """Start a W&B agent on specified GPUs.
+        
+        Args:
+            gpu_ids: int or str, can be single GPU id or comma-separated GPU ids (e.g., "0,1")
+        """
+        # Set GPU environment variable
         try:
-            runtime_log_filename = os.path.join(
-                SWEEP_LOGS_DIR,
-                f'sweep_{self.sweep_id}_gpu{gpu_id}_runtime.log'
-            )
-            
-            # Ensure logs directory exists
-            os.makedirs(SWEEP_LOGS_DIR, exist_ok=True)
-            
-            # Run agent using sweep_id
-            os.system(f"CUDA_VISIBLE_DEVICES={gpu_id} nohup wandb agent {self.sweep_id} > {runtime_log_filename} 2>&1 &")
-            logging.info("Started agent on GPU%d", gpu_id)
+            gpu_str = str(gpu_ids) if isinstance(gpu_ids, (int, str)) else ','.join(map(str, gpu_ids))
+            os.environ['CUDA_VISIBLE_DEVICES'] = gpu_str
         except Exception as e:
-            logging.error("Failed to start agent on GPU%d: %s", gpu_id, str(e))
+            logging.error("Failed to set GPU environment variable: %s", str(e))
+            raise
+            
+        # Run agent using wandb Python API
+        try:
+            logging.info("Starting agent on GPU%s", gpu_str)
+            wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
+        except Exception as e:
+            logging.error("Failed to start agent on GPU%s: %s", gpu_str, str(e))
             raise
 
     def run(self):
         """Run the sweep on available GPUs."""
         self._setup_configuration()
+        logging.info("Expected run count: %d", self._get_expected_run_count())
 
         try:
-            logging.info(self._get_expected_run_count())
-
-            for gpu_id in range(2):  # Assuming we want to use first 2 GPUs
-                if self.expected_run_count == 0:
-                    break
-
+            for gpu_id in range(2):
                 if is_gpu_free(gpu_id):
                     self._start_agent(gpu_id)
-                    self.expected_run_count -= 1
-                else:
-                    logging.warning("GPU%d is busy, skipping...", gpu_id)
+                    break
         except Exception as e:
             logging.error("Error running sweep: %s", str(e))
             raise
