@@ -2,50 +2,61 @@ import logging
 import wandb
 from utils.config import ConfigManager
 from training import TrainingPipeline
-from evaluation_pipeline import EvaluationPipeline
+from evaluating import EvaluatingPipeline
 from result_processor import ResultProcessor
 from utils.misc import setup_logging
+from utils.gpu import cleanup_gpu_memory
 
-def main():
+def pipeline():
     """Main pipeline execution."""
+    
+    # Initialize wandb
     try:
-        # Initialize wandb
         wandb.init()
-        
-        # Setup logging
-        setup_logging()
-        
-        # Create and validate configuration
+    except Exception as e:
+        logging.error("Failed to initialize wandb: %s", str(e))
+        raise
+    
+    # Setup logging
+    setup_logging()
+    
+    # Create and validate configuration
+    try:
         config = ConfigManager.create_config()
         ConfigManager.validate_config(config)
-        ConfigManager.log_config(config)
-        
-        # Run training pipeline
+    except Exception as e:
+        logging.error("Failed to create or validate configuration: %s", str(e))
+        raise
+    
+    # Run training pipeline
+    try:
         logging.info("Starting training pipeline...")
         training = TrainingPipeline(config)
-        output_dir = training.run()
-        
-        # Run evaluation pipeline
-        logging.info("Starting evaluation pipeline...")
-        evaluation = EvaluationPipeline(config, output_dir)
-        summary_dir = evaluation.run()
-        
-        # Process and log results
-        logging.info("Processing evaluation results...")
-        processor = ResultProcessor(summary_dir)
-        processor.process_all_results()
-        processor.cleanup()
-        
-        logging.info("Pipeline completed successfully")
-        
-        try:
-            wandb.finish()
-        except Exception as e:
-            logging.error(f"Failed to finish wandb run: {str(e)}")
-            
+        training.run()
+
+        # NOTE: Don't know why but it's necessary to call this function again after training
+        del training
+        cleanup_gpu_memory()
     except Exception as e:
-        logging.error(f"Pipeline failed: {str(e)}")
+        logging.error("Failed to run training pipeline: %s", str(e))
         raise
 
-if __name__ == "__main__":
-    main()
+    # Run evaluation pipeline
+    try:
+        logging.info("Starting evaluation pipeline...")
+        evaluating = EvaluatingPipeline(config)
+        evaluating.run()
+    except Exception as e:
+        logging.error("Failed to run evaluation pipeline: %s", str(e))
+        raise
+    
+    # Process and log results
+    try:
+        logging.info("Processing evaluation results...")
+        processor = ResultProcessor(config)
+        processor.run()
+    except Exception as e:
+        logging.error("Failed to process evaluation results: %s", str(e))
+        raise
+    
+    logging.info("Pipeline completed successfully")

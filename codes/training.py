@@ -5,7 +5,7 @@ import torch
 from transformers import AutoModelForCausalLM
 from peft import LoraConfig, get_peft_model
 from trl import SFTConfig, SFTTrainer
-from utils.misc import create_run_name, ensure_dir, get_output_dir
+from utils.misc import ensure_dir, get_output_dir
 from utils.gpu import cleanup_gpu_memory
 from data_processor import load_and_process_data, get_model_checkpoint
 
@@ -22,6 +22,7 @@ class TrainingPipeline:
         
     def __del__(self):
         """Cleanup resources when the object is destroyed."""
+        logging.info(torch.cuda.list_gpu_processes())
         if hasattr(self, 'trainer') and self.trainer is not None:
             if hasattr(self.trainer, 'model'):
                 # Delete the model explicitly
@@ -34,24 +35,48 @@ class TrainingPipeline:
         if hasattr(self, 'processed_dataset') and self.processed_dataset is not None:
             del self.processed_dataset
 
+        if hasattr(self, 'output_dir') and self.output_dir is not None:
+            del self.output_dir
+            
+        if hasattr(self, 'config') and self.config is not None:
+            del self.config
+
         # clear gpu memory
         cleanup_gpu_memory()
+    
+    def _create_run_name(self):
+        """Create a standardized run name from configuration."""
+        return f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task']}-" \
+            f"{self.config['dataset']}-{self.config['learning_rate']}-r{self.config['rank']}-" \
+            f"{self.config['epochs']}epochs-seed{self.config['seed']}"
         
-    def setup(self):
+    def _setup(self):
         """Setup training environment and resources."""
         # Setup wandb run name
-        wandb.run.name = create_run_name(self.config)
+        try:
+            wandb.run.name = self._create_run_name()
+        except Exception as e:
+            logging.error("Failed to set wandb run name: %s", str(e))
+            raise
         
         # Setup output directory
-        self.output_dir = get_output_dir(self.config)
-        ensure_dir(os.path.join(self.output_dir, "eval"))
+        try:
+            self.output_dir = get_output_dir(self.config)
+            ensure_dir(os.path.join(self.output_dir, "eval"))
+        except Exception as e:
+            logging.error("Failed to setup output directory: %s", str(e))
+            raise
         
         logging.info("Training pipeline setup completed")
         
-    def prepare_data(self):
+    def _prepare_data(self):
         """Load and process training data."""
-        logging.info(f"Loading and processing data for {self.config['dataset']}...")
-        self.tokenizer, self.processed_dataset = load_and_process_data(self.config)
+        logging.info("Loading and processing data for %s...", self.config['dataset'])
+        try:
+            self.tokenizer, self.processed_dataset = load_and_process_data(self.config)
+        except Exception as e:
+            logging.error("Failed to load and process data: %s", str(e))
+            raise
         logging.info("Data preparation completed")
 
     def _get_training_args(self):
@@ -113,7 +138,7 @@ class TrainingPipeline:
         
         return model
         
-    def setup_trainer(self):
+    def _setup_trainer(self):
         """Setup the trainer."""
         logging.info("Setting up trainer...")
         # Setup model
@@ -154,11 +179,7 @@ class TrainingPipeline:
         
     def run(self):
         """Run the complete training pipeline."""
-        try:
-            self.setup()
-            self.prepare_data()
-            self.setup_trainer()
-            self.train()
-        except Exception as e:
-            logging.error(f"Training pipeline failed: {str(e)}")
-            raise
+        self._setup()
+        self._prepare_data()
+        self._setup_trainer()
+        self.train()

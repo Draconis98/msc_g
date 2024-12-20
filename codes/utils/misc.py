@@ -3,7 +3,7 @@ import random
 import logging
 import numpy as np
 import torch
-from utils.config import OUTPUT_DIR, SWEEP_LOGS_DIR
+from utils.config import OUTPUT_DIR
 
 def setup_logging(log_file=None, format='%(asctime)s - %(levelname)s - %(message)s'):
     """Setup logging configuration."""
@@ -54,14 +54,6 @@ def setup_environment(seed, use_mirror=True):
 
     if use_mirror:
         os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
-
-def create_run_name(config):
-    """Create a standardized run name from configuration."""
-    return "{}-{}-{}-{}-{}-r{}-{}epochs-seed{}".format(
-        config['strategy'], config['model_name'], config['task'], 
-        config['dataset'], config['learning_rate'], config['rank'], 
-        config['epochs'], config['seed']
-    )
 
 def ensure_dir(directory):
     """Ensure directory exists."""

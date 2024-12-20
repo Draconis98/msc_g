@@ -1,23 +1,37 @@
+"""Module for loading and processing datasets with chat templates."""
+
+import os
+import logging
+
 from datasets import load_dataset, concatenate_datasets, get_dataset_config_names
 from transformers import AutoTokenizer
-import logging
-import os
-from utils.config import MODEL_PATHS, DATASETS_DIR
 
+from utils.config import MODEL_PATHS, DATASETS_DIR
 from template.data_mapping import dataset_mapping
 
 def get_tokenizer(checkpoint_path):
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
-    tokenizer.padding_side = 'right'
-    return tokenizer
+    """Get a tokenizer for a given checkpoint path."""
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
+        tokenizer.padding_side = 'right'
+        return tokenizer
+    except Exception as e:
+        logging.error("Failed to get tokenizer: %s", str(e))
+        raise
 
 def get_model_checkpoint(model_name):
-    name, size = model_name.split(':')
-    return MODEL_PATHS[name][size]
+    """Get a model checkpoint for a given model name."""
+    try:
+        name, size = model_name.split(':')
+        return MODEL_PATHS[name][size]
+    except Exception as e:
+        logging.error("Failed to get model checkpoint: %s", str(e))
+        raise
 
 def apply_chat_template(dataset_name, example, tokenizer):
+    """Apply a chat template to an example dataset."""
     # Get the template module path from dataset_mapping
     _, _, template_path = dataset_mapping[dataset_name]
     
@@ -29,6 +43,7 @@ def apply_chat_template(dataset_name, example, tokenizer):
     return example
 
 def process_chat_template(dataset_name, datasets, tokenizer, columns_names, batched):
+    """Process a dataset with a chat template."""
     return datasets.map(
         lambda x: apply_chat_template(dataset_name, x, tokenizer),
         batched=batched,
@@ -38,6 +53,7 @@ def process_chat_template(dataset_name, datasets, tokenizer, columns_names, batc
     )
 
 def load_and_process_data(config):
+    """Load and process data for a given configuration."""
     # Get tokenizer
     checkpoint_path = get_model_checkpoint(config['model_name'])
     tokenizer = get_tokenizer(checkpoint_path)
@@ -57,6 +73,6 @@ def load_and_process_data(config):
     columns_names = list(dataset.column_names)
     batched = config['dataset_batched']
     processed_dataset = process_chat_template(config['dataset'], dataset, tokenizer, columns_names, batched)
-    logging.info(processed_dataset[0])
+    logging.info("Processed dataset case: %s", processed_dataset[0])
     
     return tokenizer, processed_dataset 
