@@ -42,10 +42,13 @@ ALLOWED_MODELS = {
     'qwen1.5': ['1.8b', '4b', '7b', '14b', '32b'],
     'qwen2': ['0.5b', '1.5b', '7b'],
     'qwen2.5': ['0.5b', '1.5b', '3b', '7b', '14b', '32b'],
-    'mistral': ['7b'],
-    'gemma': ['2b'],
-    'gemma2': ['9b'],
-    'phi3': ['3.8b']
+    'qwq': ['32b'],
+    'mistral': ['7b-v0.1', '7b-v0.2', '7b-v0.3', 'nemo', 'small'],
+    'gemma': ['2b', '7b'],
+    'gemma1.1': ['2b', '7b'],
+    'gemma2': ['2b', '9b', '27b'],
+    'phi3': ['mini', 'small', 'medium'],
+    'phi3.5': ['mini'],
 }
 
 # Training strategies
@@ -87,17 +90,36 @@ MODEL_PATHS = {
         '14b': f"{COMMON_PATH}/Qwen/Qwen2.5-14B-Instruct",
         '32b': f"{COMMON_PATH}/Qwen/Qwen2.5-32B-Instruct"
     },
+    'qwq': {
+        '32b': f"{COMMON_PATH}/Qwen/QWQ-32B-Preview"
+    },
     'mistral': {
-        '7b': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.2"
+        '7b-v0.1': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.1",
+        '7b-v0.2': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.2",
+        '7b-v0.3': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.3",
+        'nemo': f"{COMMON_PATH}/Mistral/Mistral-Nemo-Instruct-2407",
+        'small': f"{COMMON_PATH}/Mistral/Mistral-Small-Instruct-2409"
     },
     'gemma': {
-        '2b': f"{COMMON_PATH}/Gemma/gemma-2b-it"
+        '2b': f"{COMMON_PATH}/Gemma/gemma-2b-it",
+        '7b': f"{COMMON_PATH}/Gemma/gemma-7b-it"
+    },
+    'gemma1.1': {
+        '2b': f"{COMMON_PATH}/Gemma/gemma-1.1-2b-it",
+        '7b': f"{COMMON_PATH}/Gemma/gemma-1.1-7b-it"
     },
     'gemma2': {
-        '9b': f"{COMMON_PATH}/Gemma/gemma-2-9b-it"
+        '2b': f"{COMMON_PATH}/Gemma/gemma-2b-it",
+        '9b': f"{COMMON_PATH}/Gemma/gemma-2-9b-it",
+        '27b': f"{COMMON_PATH}/Gemma/gemma-2-27b-it"
     },
     'phi3': {
-        '3.8b': f"{COMMON_PATH}/Phi/Phi-3-mini-128k-instruct"
+        'mini': f"{COMMON_PATH}/Phi/Phi-3-mini-128k-instruct",
+        'small': f"{COMMON_PATH}/Phi/Phi-3-small-128k-instruct",
+        'medium': f"{COMMON_PATH}/Phi/Phi-3-medium-128k-instruct"
+    },
+    'phi3.5': {
+        'mini': f"{COMMON_PATH}/Phi/Phi-3.5-mini-instruct"
     }
 }
 

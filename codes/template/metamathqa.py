@@ -6,7 +6,7 @@ metamathqa_reader = dict(
 
 def get_datasets(example):
     messages = [
-        {"role": "user", "content": example["query"]},
+        {"role": "user", "content": f"Question: {example['query']}\nLet's think step by step\nAnswer:"},
         {"role": "assistant", "content": example["response"]}
     ]
     return messages

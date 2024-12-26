@@ -22,7 +22,6 @@ class TrainingPipeline:
         
     def __del__(self):
         """Cleanup resources when the object is destroyed."""
-        logging.info(torch.cuda.list_gpu_processes())
         if hasattr(self, 'trainer') and self.trainer is not None:
             if hasattr(self.trainer, 'model'):
                 # Delete the model explicitly

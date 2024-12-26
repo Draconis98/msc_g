@@ -8,6 +8,7 @@ import subprocess
 import torch
 import wandb
 from transformers import AutoModelForCausalLM
+import GPUtil
 
 from utils.config import OPENCOMPASS_DIR
 from utils.misc import get_output_dir
@@ -34,7 +35,18 @@ class EvaluatingPipeline:
                 torch_dtype=torch.bfloat16,
                 trust_remote_code=True
             )
-            available_memory = torch.cuda.mem_get_info(0)[0] / 1e3 # MB
+            
+            # Get available GPUs
+            gpus = GPUtil.getGPUs()
+            
+            cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+            if cuda_visible_devices is not None:
+                gpus = [gpu for gpu in gpus if gpu.id in list(map(int, cuda_visible_devices.split(',')))]
+            
+            if not gpus:
+                raise RuntimeError("No GPU available")
+                
+            available_memory = gpus[0].memoryTotal - gpus[0].memoryUsed
             del model
             torch.cuda.empty_cache()
             
@@ -42,10 +54,10 @@ class EvaluatingPipeline:
             bytes_per_token = 2  # bfloat16
             seq_memory = MAX_SEQ_LEN * bytes_per_token
 
-            batch_size = math.ceil(available_memory / seq_memory / 1e3)
+            batch_size = math.ceil(available_memory / seq_memory)
                 
             batch_size = int(max(1, batch_size))
-            logging.info("Calculated batch size: %d (Available memory: %.2fGB)", batch_size, available_memory/1e6)
+            logging.info("Calculated batch size: %d (Available memory: %.2fMB)", batch_size, available_memory)
             return batch_size
             
         except (RuntimeError, OSError, torch.cuda.CudaError) as e:
@@ -57,23 +69,27 @@ class EvaluatingPipeline:
         # Determine optimal batch size
         batch_size = self._find_optimal_batch_size()
         
-        return {
-            'abbr': f"{self.config['model_name'].replace(':', '-')}-{self.config['strategy']}",
-            'type': 'HuggingFacewithChatTemplate',
-            'path': self.output_dir,
-            'model_kwargs': {
-                'torch_dtype': 'torch.bfloat16',
-            },
-            'tokenizer_kwargs': {
-                'padding_side': 'left',
-                'truncation_side': 'left',
-                'trust_remote_code': True,
-            },
-            'max_out_len': 50,
-            'max_seq_len': MAX_SEQ_LEN,
-            'batch_size': batch_size,
-            'run_cfg': {'num_gpus': 1, 'num_procs': 1},
-        }
+        try:
+            return {
+                'abbr': f"{self.config['model_name'].replace(':', '-')}-{self.config['strategy']}",
+                'type': 'HuggingFacewithChatTemplate',
+                'path': self.output_dir,
+                'model_kwargs': {
+                    'torch_dtype': 'torch.bfloat16',
+                },
+                'tokenizer_kwargs': {
+                    'padding_side': 'left',
+                    'truncation_side': 'left',
+                    'trust_remote_code': True,
+                },
+                'max_out_len': 50,
+                'max_seq_len': MAX_SEQ_LEN,
+                'batch_size': batch_size,
+                    'run_cfg': {'num_gpus': 1, 'num_procs': 1},
+                }
+        except Exception as e:
+            logging.error("Failed to get model configuration: %s", str(e))
+            raise
 
     def opencompass_configuration(self):
         """Setup opencompass configuration for evaluation."""

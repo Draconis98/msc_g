@@ -1,14 +1,14 @@
 import torch
 import gc
 import logging
+import GPUtil
 
 def is_gpu_free(gpu_id):
     """Check if a specific GPU is free."""
     try:
         if not torch.cuda.is_available():
             return False
-        gpu_memory = torch.cuda.memory_reserved(gpu_id)
-        return gpu_memory == 0
+        return GPUtil.getGPUs()[gpu_id].memoryUsed < 5.0
     except (torch.cuda.CudaError, RuntimeError) as e:
         logging.error("Failed to check GPU memory: %s", str(e))
         raise

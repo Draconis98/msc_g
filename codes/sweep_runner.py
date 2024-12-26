@@ -6,7 +6,6 @@ from datetime import datetime
 import yaml
 import wandb
 
-from utils.gpu import is_gpu_free
 from utils.misc import setup_logging
 from utils.config import WANDB_CONFIG, SWEEP_LOGS_DIR
 
@@ -101,26 +100,12 @@ class SweepRunner:
             logging.error("Sweep object missing expected attribute: %s", str(e))
             raise
     
-    def _start_agent(self, gpu_ids):
-        """Start a W&B agent on specified GPUs.
-        
-        Args:
-            gpu_ids: int or str, can be single GPU id or comma-separated GPU ids (e.g., "0,1")
-        """
-        # Set GPU environment variable
+    def _start_agent(self):
+        """Start a W&B agent on specified GPUs."""
         try:
-            gpu_str = str(gpu_ids) if isinstance(gpu_ids, (int, str)) else ','.join(map(str, gpu_ids))
-            os.environ['CUDA_VISIBLE_DEVICES'] = gpu_str
-        except Exception as e:
-            logging.error("Failed to set GPU environment variable: %s", str(e))
-            raise
-            
-        # Run agent using wandb Python API
-        try:
-            logging.info("Starting agent on GPU%s", gpu_str)
             wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
         except Exception as e:
-            logging.error("Failed to start agent on GPU%s: %s", gpu_str, str(e))
+            logging.error("Failed to start agent: %s", str(e))
             raise
 
     def run(self):
@@ -128,14 +113,7 @@ class SweepRunner:
         self._setup_configuration()
         logging.info("Expected run count: %d", self._get_expected_run_count())
 
-        try:
-            for gpu_id in range(2):
-                if is_gpu_free(gpu_id):
-                    self._start_agent(gpu_id)
-                    break
-        except Exception as e:
-            logging.error("Error running sweep: %s", str(e))
-            raise
+        self._start_agent()
 
 def run_sweep(args):
     """Main function to setup and run a wandb sweep."""

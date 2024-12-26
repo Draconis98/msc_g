@@ -53,12 +53,12 @@ class ResultProcessor:
                         self._log_row_to_wandb(row, model_column)
                         processed_rows += 1
                     except (KeyError, ValueError) as e:
-                        logging.warning("Error processing row in %s: %s", filepath, str(e))
+                        logging.warning("Error processing row in %s: %s" % (filepath, str(e)))
                         
-                logging.info("Processed %d rows from %s", processed_rows, filepath)
+                logging.info("Processed %d rows from %s" % (processed_rows, filepath))
                 
         except Exception as e:
-            logging.error("Error processing file %s: %s", filepath, str(e))
+            logging.error("Error processing file %s: %s" % (filepath, str(e)))
             raise
             
     def _log_row_to_wandb(self, row, model_column):
@@ -74,9 +74,9 @@ class ResultProcessor:
             wandb.log({metric_name: value})
             
         except KeyError as e:
-            raise KeyError("Missing required column: %s", str(e))
+            raise KeyError(f"Missing required column: {str(e)}") from e
         except ValueError as e:
-            raise ValueError("Invalid value in %s column: %s", model_column, str(e))
+            raise ValueError(f"Invalid value in {model_column} column: {str(e)}") from e
             
     def _process_all_results(self):
         """Process all CSV files in the summary directory."""
@@ -88,11 +88,11 @@ class ResultProcessor:
                 if f.endswith('.csv')
             ]
         except Exception as e:
-            logging.error("Error processing results: %s", str(e))
+            logging.error("Error processing results: %s" % str(e))
             raise
             
         if not csv_files:
-            raise RuntimeError("No CSV files found in %s", self.summary_dir)
+            raise RuntimeError(f"No CSV files found in {self.summary_dir}")
 
         for filename in csv_files:
             filepath = os.path.join(self.summary_dir, filename)

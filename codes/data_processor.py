@@ -60,14 +60,20 @@ def load_and_process_data(config):
     
     # Load dataset
     dataset_name, dataset_split, _ = dataset_mapping[config['dataset']]
-    all_configs = get_dataset_config_names(dataset_name)
     os.makedirs(DATASETS_DIR, exist_ok=True)
-    if len(all_configs) == 0:
-        dataset = load_dataset(dataset_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
+    
+    # If dataset_name contains '/', split it to get the config_name
+    if '/' in config['dataset']:
+        base_name, config_name = config['dataset'].split('/')
+        dataset = load_dataset(base_name, config_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
     else:
-        datasets_list = [load_dataset(dataset_name, config_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
-                        for config_name in all_configs]
-        dataset = concatenate_datasets(datasets_list)
+        all_configs = get_dataset_config_names(dataset_name)
+        if len(all_configs) == 0:
+            dataset = load_dataset(dataset_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
+        else:
+            datasets_list = [load_dataset(dataset_name, config_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
+                           for config_name in all_configs]
+            dataset = concatenate_datasets(datasets_list)
     
     # Process dataset
     columns_names = list(dataset.column_names)
