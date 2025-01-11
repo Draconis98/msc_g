@@ -49,6 +49,7 @@ ALLOWED_MODELS = {
     'gemma2': ['2b', '9b', '27b'],
     'phi3': ['mini', 'small', 'medium'],
     'phi3.5': ['mini'],
+    't5': ['small', 'base', 'large'],
 }
 
 # Training strategies
@@ -91,7 +92,7 @@ MODEL_PATHS = {
         '32b': f"{COMMON_PATH}/Qwen/Qwen2.5-32B-Instruct"
     },
     'qwq': {
-        '32b': f"{COMMON_PATH}/Qwen/QWQ-32B-Preview"
+        '32b': f"{COMMON_PATH}/Qwen/QwQ-32B-Preview"
     },
     'mistral': {
         '7b-v0.1': f"{COMMON_PATH}/Mistral/Mistral-7B-Instruct-v0.1",
@@ -120,6 +121,11 @@ MODEL_PATHS = {
     },
     'phi3.5': {
         'mini': f"{COMMON_PATH}/Phi/Phi-3.5-mini-instruct"
+    },
+    't5': {
+        'small': f"{COMMON_PATH}/google-t5/t5-small",
+        'base': f"{COMMON_PATH}/google-t5/t5-base",
+        'large': f"{COMMON_PATH}/google-t5/t5-large"
     }
 }
 

@@ -34,7 +34,7 @@ class EvaluatingPipeline:
                 self.output_dir,
                 torch_dtype=torch.bfloat16,
                 trust_remote_code=True
-            )
+            ).to('cuda')
             
             # Get available GPUs
             gpus = GPUtil.getGPUs()
