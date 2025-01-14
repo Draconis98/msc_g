@@ -3,5 +3,5 @@
 	url = https://github.com/open-compass/opencompass.git
 [submodule "codes/peft"]
 	path = codes/peft
-	url = https://github.com/huggingface/peft.git
+	url = git@github.com:Draconis98/peft.git
 	branch = patch-release-0.13.2
