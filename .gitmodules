@@ -1,3 +1,7 @@
 [submodule "codes/oc"]
 	path = codes/oc
 	url = https://github.com/open-compass/opencompass.git
+[submodule "codes/peft"]
+	path = codes/peft
+	url = https://github.com/huggingface/peft.git
+	branch = patch-release-0.13.2
