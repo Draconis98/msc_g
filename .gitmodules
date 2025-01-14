@@ -1,0 +1,3 @@
+[submodule "codes/oc"]
+	path = codes/oc
+	url = https://github.com/open-compass/opencompass.git
