@@ -52,7 +52,7 @@ class EvaluatingPipeline:
             
             # Estimate memory per sequence
             bytes_per_token = 2  # bfloat16
-            seq_memory = MAX_SEQ_LEN * bytes_per_token
+            seq_memory = MAX_SEQ_LEN * bytes_per_token * 2 if self.config['dataset'] == 'gpqa' else MAX_SEQ_LEN * bytes_per_token
 
             batch_size = math.ceil(available_memory / seq_memory)
                 
@@ -82,8 +82,8 @@ class EvaluatingPipeline:
                     'truncation_side': 'left',
                     'trust_remote_code': True,
                 },
-                'max_out_len': 50,
-                'max_seq_len': MAX_SEQ_LEN,
+                'max_out_len': MAX_SEQ_LEN if self.config['dataset'] == 'gpqa' else 50,
+                'max_seq_len': MAX_SEQ_LEN*2 if self.config['dataset'] == 'gpqa' else MAX_SEQ_LEN,
                 'batch_size': batch_size,
                     'run_cfg': {'num_gpus': 1, 'num_procs': 1},
                 }

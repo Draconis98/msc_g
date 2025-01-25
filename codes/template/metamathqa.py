@@ -1,7 +1,6 @@
-metamathqa_reader = dict(
+reader = dict(
     input_columns=['query'],
-    output_column='response',
-    train_split='train[:100000]'
+    output_column='response'
 )
 
 def get_datasets(example):

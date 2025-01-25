@@ -49,8 +49,8 @@ def setup_parser():
                        help='Name of the dataset')
     parser.add_argument('--eval_dataset', type=str, required=True,
                        help='Evaluation dataset')
-    parser.add_argument('-lr', '--learning_rate', type=float, required=True,
-                       help='Learning rate')
+    parser.add_argument('-lr', '--learning_rate', type=float, nargs='+', required=True,
+                       help='Learning rate(s)')
     parser.add_argument('-r', '--rank', type=lambda x: parse_list_or_int(x),
                        required=True, help='Rank value (comma-separated list or single integer)')
     parser.add_argument('-e', '--epochs', type=lambda x: parse_list_or_int(x),

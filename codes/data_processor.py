@@ -12,7 +12,7 @@ from template.data_mapping import dataset_mapping
 def get_tokenizer(checkpoint_path):
     """Get a tokenizer for a given checkpoint path."""
     try:
-        tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, trust_remote_code=True)
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
         tokenizer.padding_side = 'right'
@@ -33,7 +33,7 @@ def get_model_checkpoint(model_name):
 def apply_chat_template(dataset_name, example, tokenizer):
     """Apply a chat template to an example dataset."""
     # Get the template module path from dataset_mapping
-    _, _, template_path = dataset_mapping[dataset_name]
+    _, _, _, template_path = dataset_mapping[dataset_name]
     
     # Dynamically import the correct template module
     template_module = __import__(template_path, fromlist=['get_datasets'])
@@ -59,21 +59,48 @@ def load_and_process_data(config):
     tokenizer = get_tokenizer(checkpoint_path)
     
     # Load dataset
-    dataset_name, dataset_split, _ = dataset_mapping[config['dataset']]
+    dataset_name, config_name, dataset_split, template_path = dataset_mapping[config['dataset']]
     os.makedirs(DATASETS_DIR, exist_ok=True)
     
-    # If dataset_name contains '/', split it to get the config_name
-    if '/' in config['dataset']:
-        base_name, config_name = config['dataset'].split('/')
-        dataset = load_dataset(base_name, config_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
-    else:
-        all_configs = get_dataset_config_names(dataset_name)
-        if len(all_configs) == 0:
-            dataset = load_dataset(dataset_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
-        else:
-            datasets_list = [load_dataset(dataset_name, config_name, split=dataset_split, trust_remote_code=True, cache_dir=DATASETS_DIR)
-                           for config_name in all_configs]
+    # Get required columns from template
+    # template_module = __import__(template_path, fromlist=['reader'])
+    # required_columns = template_module.reader['input_columns']
+    
+    # Load dataset with config_name if specified
+    if config_name is not None:
+        if ',' in config_name:
+            # Handle multiple config names
+            config_names = config_name.split(',')
+            datasets_list = [
+                load_dataset(
+                    dataset_name,
+                    config,
+                    split=dataset_split,
+                    trust_remote_code=True,
+                    cache_dir=DATASETS_DIR,
+                    # select_columns=required_columns
+                )
+                for config in config_names
+            ]
             dataset = concatenate_datasets(datasets_list)
+        else:
+            dataset = load_dataset(
+                dataset_name,
+                config_name,
+                split=dataset_split,
+                trust_remote_code=True,
+                cache_dir=DATASETS_DIR,
+                # select_columns=required_columns
+            )
+    else:
+        dataset = load_dataset(
+            dataset_name,
+            split=dataset_split,
+            trust_remote_code=True,
+            cache_dir=DATASETS_DIR,
+            # select_columns=required_columns
+        )
+        
     
     # Process dataset
     columns_names = list(dataset.column_names)

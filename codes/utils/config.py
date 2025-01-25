@@ -49,6 +49,7 @@ ALLOWED_MODELS = {
     'gemma2': ['2b', '9b', '27b'],
     'phi3': ['mini', 'small', 'medium'],
     'phi3.5': ['mini'],
+    'phi4': ['small'],
     't5': ['small', 'base', 'large'],
 }
 
@@ -56,7 +57,7 @@ ALLOWED_MODELS = {
 ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude'}
 
 # Tasks and datasets
-ALLOWED_TASKS = ['math', 'code', 'commonsense', 'mmlu', 'super_glue']
+ALLOWED_TASKS = ['math', 'code', 'commonsense', 'mmlu', 'super_glue', 'mmlupro', 'gpqa', 'truthfulqa', 'openbookqa', 'agieval']
 
 # OpenCompass configuration
 OPENCOMPASS_DIR = os.path.join(BASE_DIR, "codes/oc")
@@ -121,6 +122,9 @@ MODEL_PATHS = {
     },
     'phi3.5': {
         'mini': f"{COMMON_PATH}/Phi/Phi-3.5-mini-instruct"
+    },
+    'phi4': {
+        'small': f"{COMMON_PATH}/Phi/phi-4"
     },
     't5': {
         'small': f"{COMMON_PATH}/google-t5/t5-small",

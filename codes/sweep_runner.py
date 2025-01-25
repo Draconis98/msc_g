@@ -51,6 +51,10 @@ class SweepRunner:
                 'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
             }
             
+            sweep_config['parameters']['learning_rate'] = {
+                'values': self.args.learning_rate  # Use the list of learning rates
+            }
+            
             self.sweep_config = sweep_config
         except Exception as e:
             logging.error("Failed to create sweep configuration: %s", str(e))
