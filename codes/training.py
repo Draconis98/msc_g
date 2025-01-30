@@ -115,6 +115,8 @@ class TrainingPipeline:
             lora_alpha=self.config['rank'] if self.config['strategy'].startswith(('dude', 'pissa')) else 2*self.config['rank'],
             lora_dropout=0.0,
             target_modules=self.config['target_modules'],
+            modules_to_save=['lm_head', 'embed_token'],
+            task_type=self.config['task_type'],
         )
 
     def _setup_model(self):

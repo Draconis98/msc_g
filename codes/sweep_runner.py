@@ -41,6 +41,7 @@ class SweepRunner:
                     'gradient_checkpointing', 'gradient_accumulation_steps',
                     'warmup_ratio', 'packing', 'max_seq_length',
                     'overwrite_output_dir', 'bf16', 'use_cache',
+                    'task_type',
                     'dataset_batched', 'seed'
                 ]
             }
@@ -49,6 +50,10 @@ class SweepRunner:
             # Handle target_modules separately
             sweep_config['parameters']['target_modules'] = {
                 'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
+            }
+            
+            sweep_config['parameters']['eval_dataset'] = {
+                'values': [self.args.eval_dataset] if isinstance(self.args.eval_dataset, list) else [[self.args.eval_dataset]]
             }
             
             sweep_config['parameters']['learning_rate'] = {

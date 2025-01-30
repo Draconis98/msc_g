@@ -7,7 +7,7 @@ training parameters.
 
 import argparse
 from utils.config import (
-    ALLOWED_MODELS, ALLOWED_STRATEGIES, ALLOWED_TASKS, TRAINING_DEFAULTS
+    ALLOWED_MODELS, ALLOWED_STRATEGIES, ALLOWED_TASKS, TRAINING_DEFAULTS, TASK_TYPES
 )
 
 def parse_strategies(input_str):
@@ -47,7 +47,7 @@ def setup_parser():
                        choices=ALLOWED_TASKS, help='Task to perform')
     parser.add_argument('-d', '--dataset', type=str, required=True,
                        help='Name of the dataset')
-    parser.add_argument('--eval_dataset', type=str, required=True,
+    parser.add_argument('--eval_dataset', type=lambda x: x.split(','), required=True,
                        help='Evaluation dataset')
     parser.add_argument('-lr', '--learning_rate', type=float, nargs='+', required=True,
                        help='Learning rate(s)')
@@ -57,6 +57,12 @@ def setup_parser():
                        required=True, help='Number of epochs (comma-separated list or single integer)')
     parser.add_argument('--target_modules', type=lambda x: x.split(','), required=True,
                        help='Target modules (comma-separated list)')
+    # parser.add_argument('--modules_to_save', type=str, required=True,
+    #                    choices=MODULES_TO_SAVE,
+    #                    help='Modules to save (comma-separated list)')
+    parser.add_argument('--task_type', type=str, required=True, choices=TASK_TYPES,
+                       help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, \
+                           TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
     
     # Optional arguments with defaults from config
     for key, value in TRAINING_DEFAULTS.items():

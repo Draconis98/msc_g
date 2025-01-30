@@ -56,7 +56,7 @@ class EvaluatingPipeline:
 
             batch_size = math.ceil(available_memory / seq_memory)
                 
-            batch_size = int(max(1, batch_size))
+            batch_size = int(max(1, batch_size - (3 if batch_size % 2 == 0 else 1)))
             logging.info("Calculated batch size: %d (Available memory: %.2fMB)", batch_size, available_memory)
             return batch_size
             
@@ -157,7 +157,7 @@ class EvaluatingPipeline:
             result = subprocess.run([
                 "python", opencompass_run,
                 "--models", self.config_filename,
-                "--datasets", self.config['eval_dataset'] + "_gen",
+                *["--datasets"] + [dataset + "_gen" for dataset in self.config['eval_dataset']],
                 "-w", self.eval_dir
             ], check=True, capture_output=True, text=True, encoding="utf-8")
             logging.info(result.stdout)

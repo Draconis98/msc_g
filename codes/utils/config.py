@@ -57,7 +57,10 @@ ALLOWED_MODELS = {
 ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude'}
 
 # Tasks and datasets
-ALLOWED_TASKS = ['math', 'code', 'commonsense', 'mmlu', 'super_glue', 'mmlupro', 'gpqa', 'truthfulqa', 'openbookqa', 'agieval']
+ALLOWED_TASKS = ['math', 'code', 'commonsenseqa', 'mmlu', 'super_glue', 'mmlupro', 'gpqa', 'truthfulqa', 'openbookqa', 'agieval']
+TASK_TYPES = ['CAUSAL_LM', 'SEQ_CLS', 'SEQ_2_SEQ_LM', 'TOKEN_CLS', 'QUESTION_ANS', 'FEATURE_EXTRACTION']
+
+# MODULES_TO_SAVE = ['lm_head,embed_token', 'lm_head', 'embed_token']
 
 # OpenCompass configuration
 OPENCOMPASS_DIR = os.path.join(BASE_DIR, "codes/oc")
@@ -165,11 +168,13 @@ class ConfigManager:
             'warmup_ratio': wandb.config.warmup_ratio,
             'packing': wandb.config.packing,
             'max_seq_length': wandb.config.max_seq_length,
+            'task_type': wandb.config.task_type,
             
             # Saving configuration
             'save_steps': wandb.config.save_steps,
             'save_total_limit': wandb.config.save_total_limit,
             'overwrite_output_dir': wandb.config.overwrite_output_dir,
+            # 'modules_to_save': wandb.config.modules_to_save,
             
             # Add seed configuration
             'seed': wandb.config.seed,
@@ -183,7 +188,7 @@ class ConfigManager:
         """Validate configuration parameters."""
         required_fields = [
             'model_name', 'strategy', 'task', 'dataset', 'eval_dataset',
-            'learning_rate', 'epochs', 'batch_size'
+            'learning_rate', 'epochs', 'batch_size', 'task_type'
         ]
         
         for field in required_fields:
