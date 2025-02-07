@@ -1,6 +1,6 @@
 [submodule "codes/oc"]
 	path = codes/oc
-	url = https://github.com/open-compass/opencompass.git
+	url = git@github.com:Draconis98/opencompass.git
 [submodule "codes/peft"]
 	path = codes/peft
 	url = git@github.com:Draconis98/peft.git
