@@ -62,9 +62,17 @@ def ensure_dir(directory):
 
 def get_output_dir(config):
     """Get the output directory for the training."""
-    return os.path.join(
-        OUTPUT_DIR,
-        f"{config['strategy']}/{config['task']}/{config['dataset']}/" \
-        f"{config['model_name'].replace(':', '/')}/" \
-        f"{config['learning_rate']}/r{config['rank']}/{config['epochs']}epochs"
-    )
+    if config['data_selection']:
+        return os.path.join(
+            OUTPUT_DIR,
+            f"{config['strategy']}/{config['task']}/{config['dataset']}/" \
+            f"{config['model_name'].replace(':', '/')}/" \
+            f"{config['learning_rate']}/r{config['rank']}/{config['epochs']}epochs-filtered"
+        )
+    else:
+        return os.path.join(
+            OUTPUT_DIR,
+            f"{config['strategy']}/{config['task']}/{config['dataset']}/" \
+            f"{config['model_name'].replace(':', '/')}/" \
+            f"{config['learning_rate']}/r{config['rank']}/{config['epochs']}epochs"
+        )

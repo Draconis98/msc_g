@@ -1,6 +1,6 @@
 dataset_mapping = {
-        'metamath': ("meta-math/MetaMathQA", None, "train[:100000]", "template.metamathqa"),
-        'mmlu': ("lukaemon/mmlu", "all", "train", "template.mmlu"),
+        'metamath': ("meta-math/MetaMathQA", None, "train", "template.metamathqa"),
+        'mmlu': ("cais/mmlu", "all", "auxiliary_train", "template.mmlu"),
         'super_glue/axb': ("aps/super_glue", "axb", "train", "template.axb"),
         'super_glue/boolq': ("aps/super_glue", "boolq", "train", "template.boolq"),
         'super_glue/cb': ("aps/super_glue", "cb", "train", "template.cb"),
@@ -14,4 +14,5 @@ dataset_mapping = {
         'gpqa': ("Idavidrein/gpqa", "gpqa_main,gpqa_extended", "train", "template.gpqa"),
         'gpqa_main': ("Idavidrein/gpqa", "gpqa_main", "train", "template.gpqa"),
         'gpqa_extended': ("Idavidrein/gpqa", "gpqa_extended", "train", "template.gpqa"),
+        'gpqa_experts': ("Idavidrein/gpqa", "gpqa_experts", "train", "template.gpqa"),
         }

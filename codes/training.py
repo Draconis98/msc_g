@@ -45,9 +45,14 @@ class TrainingPipeline:
     
     def _create_run_name(self):
         """Create a standardized run name from configuration."""
-        return f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task']}-" \
-            f"{self.config['dataset']}-{self.config['learning_rate']}-r{self.config['rank']}-" \
-            f"{self.config['epochs']}epochs-seed{self.config['seed']}"
+        if self.config['data_selection']:
+            return f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task']}-" \
+                f"{self.config['dataset']}-{self.config['learning_rate']}-r{self.config['rank']}-" \
+                f"{self.config['epochs']}epochs-seed{self.config['seed']}-filtered"
+        else:
+            return f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task']}-" \
+                f"{self.config['dataset']}-{self.config['learning_rate']}-r{self.config['rank']}-" \
+                f"{self.config['epochs']}epochs-seed{self.config['seed']}"
         
     def _setup(self):
         """Setup training environment and resources."""

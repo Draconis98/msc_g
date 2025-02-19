@@ -54,7 +54,7 @@ ALLOWED_MODELS = {
 }
 
 # Training strategies
-ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude'}
+ALLOWED_STRATEGIES = {'fft', 'lora', 'dora', 'pissa', 'dude', 'dude_reverse'}
 
 # Tasks and datasets
 ALLOWED_TASKS = ['math', 'code', 'commonsenseqa', 'mmlu', 'super_glue', 'mmlupro', 'gpqa', 'truthfulqa', 'openbookqa', 'agieval']
@@ -156,6 +156,7 @@ class ConfigManager:
             'dataset': wandb.config.dataset,
             'eval_dataset': wandb.config.eval_dataset,
             'dataset_batched': wandb.config.dataset_batched,
+            'data_selection': wandb.config.data_selection,
             
             # Training configuration
             'epochs': wandb.config.epochs,
@@ -169,6 +170,7 @@ class ConfigManager:
             'packing': wandb.config.packing,
             'max_seq_length': wandb.config.max_seq_length,
             'task_type': wandb.config.task_type,
+            'dude_adaptive': wandb.config.dude_adaptive,
             
             # Saving configuration
             'save_steps': wandb.config.save_steps,

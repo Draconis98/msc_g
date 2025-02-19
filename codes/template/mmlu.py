@@ -1,7 +1,7 @@
-mmlu_reader = dict(
-    input_columns=['input', 'A', 'B', 'C', 'D'],
-    output_column='target',
-    train_split='dev'
+reader = dict(
+    input_columns=['question', 'choices'],
+    output_column='answer',
+    train_split='auxiliary_train'
 )
 
 mmlu_all_sets = [
@@ -66,9 +66,12 @@ mmlu_all_sets = [
 
 def get_datasets(example):
     _hint = f'Answer the question by replying A, B, C or D.'
+    question = example['question']
+    choices = example['choices']
+    answer = example['answer']
     messages = [
-        {"role": "user", "content": _hint + "\nQuestion: {{input}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\nAnswer: "},
-        {"role": "assistant", "content": "{{target}}"}
+        {"role": "user", "content": f"{_hint}\nQuestion: {question}\nA. {choices[0]}\nB. {choices[1]}\nC. {choices[2]}\nD. {choices[3]}\nAnswer: "},
+        {"role": "assistant", "content": "A" if answer == 0 else "B" if answer == 1 else "C" if answer == 2 else "D"}
     ]
 
-    return messages
+    return messages, answer

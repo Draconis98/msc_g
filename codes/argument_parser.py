@@ -64,6 +64,8 @@ def setup_parser():
                        help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, \
                            TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
     
+    parser.add_argument('--data_selection', type=bool, default=False, help='Data selection method')
+
     # Optional arguments with defaults from config
     for key, value in TRAINING_DEFAULTS.items():
         parser.add_argument(f'--{key}', type=type(value), default=value,

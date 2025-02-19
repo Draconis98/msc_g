@@ -8,4 +8,5 @@ def get_datasets(example):
         {"role": "user", "content": f"Question: {example['query']}\nLet's think step by step\nAnswer:"},
         {"role": "assistant", "content": example["response"]}
     ]
-    return messages
+    resp = example["response"]
+    return messages, resp

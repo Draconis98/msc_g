@@ -9,4 +9,5 @@ def get_datasets(example):
         {"role": "user", "content": f"{example['question']}\nA. {example['choices']['text'][0]}\nB. {example['choices']['text'][1]}\nC. {example['choices']['text'][2]}\nD. {example['choices']['text'][3]}\nE. {example['choices']['text'][4]}\nAnswer:"},
         {"role": "assistant", "content": example["answerKey"]}
     ]
-    return messages
+    resp = example["answerKey"]
+    return messages, resp

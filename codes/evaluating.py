@@ -98,7 +98,7 @@ class EvaluatingPipeline:
         # Create model directory
         try:
             model_name = self.config['model_name'].split(':')[0]
-            model_name = ''.join([i for i in model_name if not i.isdigit()])
+            model_name = ''.join([i for i in model_name if not i.isdigit() and i != '.'])
             eval_dir = os.path.join(OPENCOMPASS_DIR, 'opencompass', 'configs', 'models', model_name)
             os.makedirs(eval_dir, exist_ok=True)
         except Exception as e:
