@@ -2,7 +2,7 @@
 
 import math
 import os
-import logging
+from loguru import logger
 import subprocess
 
 import torch
@@ -13,7 +13,7 @@ import GPUtil
 from utils.config import OPENCOMPASS_DIR
 from utils.misc import get_output_dir
 
-MAX_SEQ_LEN = 1024
+MAX_SEQ_LEN = 4096
 
 class EvaluatingPipeline:
     """Manages the complete evaluation process including setup, running, and results processing."""
@@ -52,16 +52,16 @@ class EvaluatingPipeline:
             
             # Estimate memory per sequence
             bytes_per_token = 2  # bfloat16
-            seq_memory = MAX_SEQ_LEN * bytes_per_token * 2 if self.config['dataset'] == 'gpqa' else MAX_SEQ_LEN * bytes_per_token
+            seq_memory = MAX_SEQ_LEN * bytes_per_token
 
             batch_size = math.ceil(available_memory / seq_memory)
                 
             batch_size = int(max(1, batch_size - (3 if batch_size % 2 == 0 else 1)))
-            logging.info("Calculated batch size: %d (Available memory: %.2fMB)", batch_size, available_memory)
+            logger.info("Calculated batch size: %d (Available memory: %.2fMB)", batch_size, available_memory)
             return batch_size
             
         except (RuntimeError, OSError, torch.cuda.CudaError) as e:
-            logging.warning("Failed to determine optimal batch size: %s", str(e))
+            logger.warning("Failed to determine optimal batch size: %s", str(e))
             return 32  # fallback to default
         
     def _get_model_config(self):
@@ -82,18 +82,18 @@ class EvaluatingPipeline:
                     'truncation_side': 'left',
                     'trust_remote_code': True,
                 },
-                'max_out_len': MAX_SEQ_LEN if self.config['dataset'] == 'gpqa' else 50,
-                'max_seq_len': MAX_SEQ_LEN*2 if self.config['dataset'] == 'gpqa' else MAX_SEQ_LEN,
+                'max_out_len': MAX_SEQ_LEN,
+                'max_seq_len': MAX_SEQ_LEN,
                 'batch_size': batch_size,
-                    'run_cfg': {'num_gpus': 1, 'num_procs': 1},
-                }
+                'run_cfg': {'num_gpus': 1, 'num_procs': 1},
+            }
         except Exception as e:
-            logging.error("Failed to get model configuration: %s", str(e))
+            logger.error("Failed to get model configuration: %s", str(e))
             raise
 
     def opencompass_configuration(self):
         """Setup opencompass configuration for evaluation."""
-        logging.info("Setting up opencompass configuration...")
+        logger.info("Setting up opencompass configuration...")
         
         # Create model directory
         try:
@@ -102,7 +102,7 @@ class EvaluatingPipeline:
             eval_dir = os.path.join(OPENCOMPASS_DIR, 'opencompass', 'configs', 'models', model_name)
             os.makedirs(eval_dir, exist_ok=True)
         except Exception as e:
-            logging.error("Failed to create model directory in opencompass: %s", str(e))
+            logger.error("Failed to create model directory in opencompass: %s", str(e))
             raise
 
         # Create model configuration file
@@ -133,7 +133,7 @@ class EvaluatingPipeline:
                 file.write('    ),\n')
                 file.write(']\n')
         except Exception as e:
-            logging.error("Failed to create model configuration file: %s", str(e))
+            logger.error("Failed to create model configuration file: %s", str(e))
             raise
 
         # Log evaluation configuration to wandb
@@ -146,11 +146,11 @@ class EvaluatingPipeline:
             }
         })
         
-        logging.info("Opencompass configuration completed")
+        logger.success("Opencompass configuration completed")
 
     def evaluation(self):
         """Run the evaluation process."""
-        logging.info("Running evaluation...")
+        logger.info("Running evaluation...")
         opencompass_run = os.path.join(OPENCOMPASS_DIR, "run.py")
         
         try:
@@ -160,12 +160,12 @@ class EvaluatingPipeline:
                 *["--datasets"] + [dataset + "_gen" for dataset in self.config['eval_dataset']],
                 "-w", self.eval_dir
             ], check=True, capture_output=True, text=True, encoding="utf-8")
-            logging.info(result.stdout)
+            logger.info(result.stdout)
         except subprocess.CalledProcessError as e:
-            logging.error("Evaluation failed: %s", e.stderr)
+            logger.error("Evaluation failed: %s", e.stderr)
             raise
             
-        logging.info("Evaluation completed")
+        logger.success("Evaluation completed")
     
     def run(self):
         """Run the complete evaluation pipeline."""

@@ -1,17 +1,14 @@
 """Module for managing and executing W&B sweeps across multiple GPUs."""
 
 import os
-import logging
 from datetime import datetime
 import yaml
 import wandb
-
-from utils.misc import setup_logging
+from loguru import logger
 from utils.config import WANDB_CONFIG, SWEEP_LOGS_DIR
 
 from pipeline import pipeline
 
-setup_logging()
 
 class SweepRunner:
     """Manages and executes W&B sweeps across multiple GPUs."""
@@ -31,20 +28,20 @@ class SweepRunner:
             sweep_config = {
                 'entity': WANDB_CONFIG["entity"],
                 'project': WANDB_CONFIG["project"],
-            'method': 'grid',
-            'parameters': {
-                key: {'values': [getattr(self.args, key)] if not isinstance(getattr(self.args, key), list) else getattr(self.args, key)}
-                for key in [
-                    'strategy', 'model_name', 'task', 'dataset', 'eval_dataset',
-                    'learning_rate', 'learning_schedule', 'rank', 'epochs',
-                    'batch_size', 'save_steps', 'save_total_limit',
-                    'gradient_checkpointing', 'gradient_accumulation_steps',
-                    'warmup_ratio', 'packing', 'max_seq_length',
-                    'overwrite_output_dir', 'bf16', 'use_cache',
-                    'task_type', 'data_selection', 'dude_adaptive',
-                    'dataset_batched', 'seed'
-                ]
-            }
+                'method': 'grid',
+                'parameters': {
+                    key: {'values': [getattr(self.args, key)] if not isinstance(getattr(self.args, key), list) else getattr(self.args, key)}
+                    for key in [
+                        'strategy', 'model_name', 'task', 'dataset', 'eval_dataset',
+                        'learning_rate', 'learning_schedule', 'rank', 'epochs',
+                        'batch_size', 'save_steps', 'save_total_limit',
+                        'gradient_checkpointing', 'gradient_accumulation_steps',
+                        'warmup_ratio', 'packing', 'max_seq_length',
+                        'overwrite_output_dir', 'bf16', 'use_cache',
+                        'task_type', 'data_selection', 'dude_adaptive',
+                        'dataset_batched', 'seed'
+                    ]
+                }
         }
         
             # Handle target_modules separately
@@ -62,7 +59,7 @@ class SweepRunner:
             
             self.sweep_config = sweep_config
         except Exception as e:
-            logging.error("Failed to create sweep configuration: %s", str(e))
+            logger.error("Failed to create sweep configuration: %s", str(e))
             raise
     
     def _save_sweep_config(self):
@@ -77,7 +74,7 @@ class SweepRunner:
             with open(filepath, 'w', encoding='utf-8') as file:
                 yaml.dump(self.sweep_config, file, default_flow_style=False) 
         except Exception as e:
-            logging.error("Failed to save sweep configuration: %s", str(e))
+            logger.error("Failed to save sweep configuration: %s", str(e))
             raise
 
     def _setup_configuration(self):
@@ -89,7 +86,7 @@ class SweepRunner:
             # Create sweep using wandb API
             self.sweep_id = wandb.sweep(self.sweep_config, project=self.sweep_config['project'])
         except Exception as e:
-            logging.error("Failed to setup sweep: %s", str(e))
+            logger.error("Failed to setup sweep: %s", str(e))
             raise
 
     def _get_expected_run_count(self):
@@ -100,13 +97,13 @@ class SweepRunner:
             return self.expected_run_count
         
         except wandb.errors.CommError as e:
-            logging.error("Network error while accessing sweep: %s", str(e))
+            logger.error("Network error while accessing sweep: %s", str(e))
             raise
         except KeyError as e:
-            logging.error("Invalid sweep config: missing key %s", str(e))
+            logger.error("Invalid sweep config: missing key %s", str(e))
             raise
         except AttributeError as e:
-            logging.error("Sweep object missing expected attribute: %s", str(e))
+            logger.error("Sweep object missing expected attribute: %s", str(e))
             raise
     
     def _start_agent(self):
@@ -114,13 +111,13 @@ class SweepRunner:
         try:
             wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
         except Exception as e:
-            logging.error("Failed to start agent: %s", str(e))
+            logger.error("Failed to start agent: %s", str(e))
             raise
 
     def run(self):
         """Run the sweep on available GPUs."""
         self._setup_configuration()
-        logging.info("Expected run count: %d", self._get_expected_run_count())
+        logger.info("Expected run count: %d", self._get_expected_run_count())
 
         self._start_agent()
 

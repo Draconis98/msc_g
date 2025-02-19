@@ -1,14 +1,12 @@
 """Main module for running model evaluation sweeps with configurable parameters."""
 
-import logging
+from loguru import logger
 from argument_parser import parse_args
 from sweep_runner import run_sweep
-from utils.misc import setup_logging, setup_environment
+from utils.misc import setup_environment
 
 def main():
     """Main entry point of the application."""
-    # Setup logging
-    setup_logging()
     
     try:
         # Parse command line arguments
@@ -21,7 +19,7 @@ def main():
         run_sweep(args)
         
     except Exception as e:
-        logging.error("An error occurred: %s", str(e))
+        logger.error("An error occurred: %s", str(e))
         raise
 
 if __name__ == "__main__":

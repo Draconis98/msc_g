@@ -2,7 +2,7 @@
 
 import os
 import csv
-import logging
+from loguru import logger
 import wandb
 from utils.misc import get_output_dir
 
@@ -32,7 +32,7 @@ class ResultProcessor:
             )
             return os.path.join(self.eval_dir, latest_run, "summary")
         except Exception as e:
-            logging.error("Error getting latest run directory: %s", str(e))
+            logger.error("Error getting latest run directory: %s", str(e))
             raise
         
     def _process_csv_file(self, filepath):
@@ -53,12 +53,12 @@ class ResultProcessor:
                         self._log_row_to_wandb(row, model_column)
                         processed_rows += 1
                     except (KeyError, ValueError) as e:
-                        logging.warning("Error processing row in %s: %s" % (filepath, str(e)))
+                        logger.warning("Error processing row in %s: %s" % (filepath, str(e)))
                         
-                logging.info("Processed %d rows from %s" % (processed_rows, filepath))
+                logger.info("Processed %d rows from %s" % (processed_rows, filepath))
                 
         except Exception as e:
-            logging.error("Error processing file %s: %s" % (filepath, str(e)))
+            logger.error("Error processing file %s: %s" % (filepath, str(e)))
             raise
             
     def _log_row_to_wandb(self, row, model_column):
@@ -80,7 +80,7 @@ class ResultProcessor:
             
     def _process_all_results(self):
         """Process all CSV files in the summary directory."""
-        logging.info("Processing results from %s", self.summary_dir)
+        logger.info("Processing results from %s", self.summary_dir)
         
         try:
             csv_files = [
@@ -88,7 +88,7 @@ class ResultProcessor:
                 if f.endswith('.csv')
             ]
         except Exception as e:
-            logging.error("Error processing results: %s" % str(e))
+            logger.error("Error processing results: %s" % str(e))
             raise
             
         if not csv_files:
@@ -98,7 +98,7 @@ class ResultProcessor:
             filepath = os.path.join(self.summary_dir, filename)
             self._process_csv_file(filepath)
                 
-        logging.info("All results processed successfully")
+        logger.success("All results processed successfully")
 
     def run(self):
         """Run the result processing pipeline."""

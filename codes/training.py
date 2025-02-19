@@ -1,5 +1,5 @@
 import os
-import logging
+from loguru import logger
 import wandb
 import torch
 from transformers import AutoModelForCausalLM
@@ -48,11 +48,11 @@ class TrainingPipeline:
         if self.config['data_selection']:
             return f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task']}-" \
                 f"{self.config['dataset']}-{self.config['learning_rate']}-r{self.config['rank']}-" \
-                f"{self.config['epochs']}epochs-seed{self.config['seed']}-filtered"
+                f"{self.config['epochs']}epochs-ds"
         else:
             return f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task']}-" \
                 f"{self.config['dataset']}-{self.config['learning_rate']}-r{self.config['rank']}-" \
-                f"{self.config['epochs']}epochs-seed{self.config['seed']}"
+                f"{self.config['epochs']}epochs"
         
     def _setup(self):
         """Setup training environment and resources."""
@@ -60,7 +60,7 @@ class TrainingPipeline:
         try:
             wandb.run.name = self._create_run_name()
         except Exception as e:
-            logging.error("Failed to set wandb run name: %s", str(e))
+            logger.error("Failed to set wandb run name: %s", str(e))
             raise
         
         # Setup output directory
@@ -68,20 +68,20 @@ class TrainingPipeline:
             self.output_dir = get_output_dir(self.config)
             ensure_dir(os.path.join(self.output_dir, "eval"))
         except Exception as e:
-            logging.error("Failed to setup output directory: %s", str(e))
+            logger.error("Failed to setup output directory: %s", str(e))
             raise
         
-        logging.info("Training pipeline setup completed")
+        logger.success("Training pipeline setup completed")
         
     def _prepare_data(self):
         """Load and process training data."""
-        logging.info("Loading and processing data for %s...", self.config['dataset'])
+        logger.info("Loading and processing data for %s...", self.config['dataset'])
         try:
             self.tokenizer, self.processed_dataset = load_and_process_data(self.config)
         except Exception as e:
-            logging.error("Failed to load and process data: %s", str(e))
+            logger.error("Failed to load and process data: %s", str(e))
             raise
-        logging.info("Data preparation completed")
+        logger.success("Data preparation completed")
 
     def _get_training_args(self):
         """Create training arguments for the SFT trainer."""
@@ -146,7 +146,7 @@ class TrainingPipeline:
         
     def _setup_trainer(self):
         """Setup the trainer."""
-        logging.info("Setting up trainer...")
+        logger.info("Setting up trainer...")
         # Setup model
         model = self._setup_model()
         
@@ -159,11 +159,11 @@ class TrainingPipeline:
             train_dataset=self.processed_dataset,
             tokenizer=self.tokenizer,
         )
-        logging.info("Trainer setup completed")
+        logger.success("Trainer setup completed")
         
     def train(self):
         """Run the training process."""
-        logging.info("Starting training...")
+        logger.info("Starting training...")
         try:
             train_result = self.trainer.train()
             metrics = train_result.metrics
@@ -176,7 +176,7 @@ class TrainingPipeline:
             self.trainer.model.save_pretrained(self.output_dir)
             self.tokenizer.save_pretrained(self.output_dir)
             
-            logging.info("Training completed")
+            logger.success("Training completed")
             return metrics
         
         except Exception as e:

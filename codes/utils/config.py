@@ -1,7 +1,7 @@
 """Configuration management module for the training pipeline."""
 
 import os
-import logging
+from loguru import logger
 import wandb
 
 # Base paths
@@ -50,7 +50,6 @@ ALLOWED_MODELS = {
     'phi3': ['mini', 'small', 'medium'],
     'phi3.5': ['mini'],
     'phi4': ['small'],
-    't5': ['small', 'base', 'large'],
 }
 
 # Training strategies
@@ -182,7 +181,7 @@ class ConfigManager:
             'seed': wandb.config.seed,
         }
         
-        logging.info("Configuration created successfully")
+        logger.success("Configuration created successfully")
         return config
     
     @staticmethod
@@ -206,15 +205,15 @@ class ConfigManager:
         if config['batch_size'] <= 0:
             raise ValueError("Batch size must be positive")
         
-        logging.info("Configuration validated successfully")
+        logger.success("Configuration validated successfully")
         return True
     
     @staticmethod
     def log_config(config):
         """Log configuration parameters."""
-        logging.info("Current configuration:")
+        logger.info("Current configuration:")
         for key, value in config.items():
-            logging.info("  %s: %s", key, value)
+            logger.info("  %s: %s", key, value)
             
     @staticmethod
     def update_config(config, updates):
@@ -222,7 +221,7 @@ class ConfigManager:
         for key, value in updates.items():
             if key in config:
                 config[key] = value
-                logging.info("Updated %s to %s", key, value)
+                logger.info("Updated %s to %s", key, value)
             else:
-                logging.warning("Attempted to update non-existent config key: %s", key)
+                logger.warning("Attempted to update non-existent config key: %s", key)
         return config 
