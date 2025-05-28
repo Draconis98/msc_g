@@ -1,0 +1,3 @@
+[submodule "opencompass"]
+	path = opencompass
+	url = git@github.com:open-compass/opencompass.git
