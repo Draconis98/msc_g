@@ -1,3 +1,6 @@
 [submodule "opencompass"]
 	path = opencompass
 	url = git@github.com:open-compass/opencompass.git
+[submodule "peft"]
+	path = peft
+	url = git@github.com:huggingface/peft.git

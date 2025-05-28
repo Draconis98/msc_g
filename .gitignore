@@ -9,7 +9,6 @@ wheels/
 .mypy_cache
 icl_inference_output
 logs
-peft
 tmp
 wandb
 .DS_Store
