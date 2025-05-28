@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.cache
+.mypy_cache
+icl_inference_output
+logs
+peft
+tmp
+wandb
+.DS_Store
+.vscode
+.venv
