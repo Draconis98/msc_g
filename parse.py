@@ -67,6 +67,9 @@ def setup_parser():
     for key, value in TRAINING_DEFAULTS.items():
         parser.add_argument(f'--{key}', type=type(value), default=value,
                           help=f'{key.replace("_", " ").title()} (default: {value})')
+
+    parser.add_argument('--use_mirror', type=bool, default=True,
+                       help='Use mirror for downloading models')
     
     return parser
 

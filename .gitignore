@@ -14,3 +14,4 @@ wandb
 .DS_Store
 .vscode
 .venv
+outputs/
