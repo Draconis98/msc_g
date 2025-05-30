@@ -36,7 +36,7 @@ TRAINING_DEFAULTS = {
 TASK_TYPES = ['CAUSAL_LM', 'SEQ_CLS', 'SEQ_2_SEQ_LM', 'TOKEN_CLS', 'QUESTION_ANS', 'FEATURE_EXTRACTION']
 
 # OpenCompass configuration
-OPENCOMPASS_DIR = os.path.join(BASE_DIR, "codes/opencompass")
+OPENCOMPASS_DIR = os.path.join(BASE_DIR, "opencompass")
 
 class ConfigManager:
     """Manages configuration for the training pipeline."""
