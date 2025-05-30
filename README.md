@@ -49,6 +49,7 @@ cd msc_g
 ```bash
 uv init
 uv venv .venv --python python3.10
+source .venv/bin/activate
 cd opencompass
 uv pip install -e .
 cd .. && cd peft
