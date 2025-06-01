@@ -54,7 +54,8 @@ cd opencompass
 uv pip install -e .
 cd .. && cd peft
 uv pip install -e .
-uv pip install logulu wandb gputil
+uv pip install trl logulu wandb gputil ninja
+uv pip install flash-attn --no-build-isolation
 ```
 
 ## Usage
@@ -98,5 +99,6 @@ This project automatically generates OpenCompass configurations and invokes its 
 
 ## Reference
 
-- [OpenCompass](https://github.com/open-compass/opencompass): Large Language Model Evaluation Benchmark
-- [PEFT](https://github.com/huggingface/peft): Parameter-Efficient Fine-Tuning Library
+- [<img src="https://img.shields.io/badge/GitHub-OpenCompass-blue?logo=github" align="center">](https://github.com/open-compass/opencompass) is a Large Language Model Evaluation Benchmark
+- [<img src="https://img.shields.io/badge/GitHub-PEFT-blue?logo=github" align="center">](https://github.com/huggingface/peft) [<img src="https://img.shields.io/badge/🤗-Docs-blue" align="center">](https://huggingface.co/docs/peft/index) is a library for efficiently adapting large pretrained models to various downstream applications without fine-tuning all of a model’s parameters because it is prohibitively costly.
+- [<img src="https://img.shields.io/badge/GitHub-TRL-blue?logo=github" align="center">](https://github.com/huggingface/trl) [<img src="https://img.shields.io/badge/🤗-Docs-blue" align="center">](https://huggingface.co/docs/trl/index) is a full stack library where we provide a set of tools to train transformer language models with methods like Supervised Fine-Tuning (SFT), Group Relative Policy Optimization (GRPO), Direct Preference Optimization (DPO), Reward Modeling, and more.
