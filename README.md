@@ -54,7 +54,7 @@ cd opencompass
 uv pip install -e .
 cd .. && cd peft
 uv pip install -e .
-uv pip install trl logulu wandb gputil ninja
+uv pip install trl logulu wandb gputil ninja nvitop
 uv pip install flash-attn --no-build-isolation
 ```
 
@@ -72,7 +72,9 @@ python main.py \
   -e 1,2 \
   -tt CAUSAL_LM \
   -r 16,32 \
-  -t q_proj,k_proj,v_proj
+  -t q_proj,k_proj,v_proj \
+  --wandb_entity <your_wandb_entity> \
+  --wandb_project <your_wandb_project>
 ```
 
 **Key Parameters:**
@@ -92,6 +94,68 @@ For more parameters, see `parse.py` and `utils/config.py`, which support customi
 
 - Training and evaluation results are saved in the `outputs/` directory
 - WandB is used for experiment tracking and visualization
+
+### Monitoring GPU Usage
+
+To monitor GPU usage and memory consumption during training, you can use either `nvidia-smi` or `nvitop` in a separate terminal:
+
+Using nvidia-smi:
+```bash
+watch -n 1 nvidia-smi
+```
+
+Using nvitop:
+```bash
+nvitop -m full
+```
+
+We recommend using `nvitop` for GPU monitoring as it provides a more user-friendly interface and comprehensive information compared to `nvidia-smi`. It displays:
+
+- GPU utilization and memory usage
+- Process information including command and user
+- Power consumption and temperature
+- Memory allocation and fragmentation
+- Interactive process management
+
+
+### Setting GPU Devices
+
+To specify which GPU(s) to use for training and evaluation, set the `CUDA_VISIBLE_DEVICES` environment variable before running the command:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python main.py \
+  -s fft,lora \
+  -m Qwen/Qwen3-0.6B,Qwen/Qwen2-0.5B \
+  -d Idavidrein/gpqa \
+  -lr 1e-4,1e-5 \
+  -ed gpqa_gen \
+  -e 1,2 \
+  -tt CAUSAL_LM \
+  -r 16,32 \
+  -t q_proj,k_proj,v_proj \
+  --wandb_entity <your_wandb_entity> \
+  --wandb_project <your_wandb_project>
+```
+
+### Note on GPU Device Ordering
+
+The logical mapping of `CUDA_VISIBLE_DEVICES` may not match the physical order shown by `nvidia-smi` or `nvitop`. This is because `CUDA_DEVICE_ORDER` defaults to `FASTEST_FIRST`.
+
+To make the device ordering consistent with the physical PCI bus order:
+
+For bash users:
+```bash
+echo "export CUDA_DEVICE_ORDER=PCI_BUS_ID" >> ~/.bashrc
+source ~/.bashrc
+```
+
+For zsh users:
+```zsh
+echo "export CUDA_DEVICE_ORDER=PCI_BUS_ID" >> ~/.zshrc
+source ~/.zshrc
+```
+
+
 
 ## OpenCompass
 

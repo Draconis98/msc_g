@@ -55,7 +55,7 @@ class LLMEvaluatingPipeline:
             
             # Estimate memory per sequence
             bytes_per_token = 2  # bfloat16
-            seq_memory = MAX_SEQ_LEN * bytes_per_token * 2
+            seq_memory = MAX_SEQ_LEN * bytes_per_token * 3
 
             batch_size = math.ceil(available_memory / seq_memory)
                 

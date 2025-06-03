@@ -63,6 +63,12 @@ def setup_parser():
     parser.add_argument('-t', '--target_modules', type=lambda x: x.split(','), required=True,
                        help='Target modules (comma-separated list, e.g. q_proj,k_proj,v_proj)')
     
+    # WandB
+    parser.add_argument('--wandb_project', type=str, required=True,
+                       help='WandB project name')
+    parser.add_argument('--wandb_entity', type=str, required=True,
+                       help='WandB entity name')
+    
     # Optional arguments with defaults from config
     for key, value in TRAINING_DEFAULTS.items():
         parser.add_argument(f'--{key}', type=type(value), default=value,

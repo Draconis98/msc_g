@@ -5,14 +5,8 @@ from loguru import logger
 import wandb
 
 # Base paths
-BASE_DIR = "/home/draco/codes"
+BASE_DIR = os.path.expanduser("~/codes")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
-
-# Wandb configuration
-WANDB_CONFIG = {
-    "project": "graduation-project",
-    "entity": "draco98",
-}
 
 # Training defaults
 TRAINING_DEFAULTS = {

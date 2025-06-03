@@ -9,7 +9,6 @@ from loguru import logger
 
 import wandb
 from pipeline import pipeline
-from utils.config import WANDB_CONFIG
 
 class Sweep:
     """Manages and executes W&B sweeps across multiple GPUs."""
@@ -42,8 +41,8 @@ class Sweep:
         """
         try:
             config = {
-                'entity': WANDB_CONFIG["entity"],
-                'project': WANDB_CONFIG["project"],
+                'entity': self.args.wandb_entity,
+                'project': self.args.wandb_project,
                 'method': 'grid',
                 'parameters': {
                     key: {'values': [getattr(self.args, key)] 
