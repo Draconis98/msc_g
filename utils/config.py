@@ -69,9 +69,15 @@ class ConfigManager:
             'save_steps': wandb.config.save_steps,
             'save_total_limit': wandb.config.save_total_limit,
             'overwrite_output_dir': wandb.config.overwrite_output_dir,
+
+            # Evaluation configuration
+            'enable_thinking': wandb.config.enable_thinking,
             
             # Add seed configuration
             'seed': wandb.config.seed,
+
+            # Debug configuration
+            'debug': wandb.config.debug,
         }
         
         logger.success("Configuration created successfully")

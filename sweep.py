@@ -55,7 +55,7 @@ class Sweep:
                         'gradient_checkpointing', 'gradient_accumulation_steps',
                         'warmup_ratio', 'packing', 'max_seq_length',
                         'overwrite_output_dir', 'bf16', 'use_cache',
-                        'task_type', 'dataset_batched', 'seed'
+                        'task_type', 'dataset_batched', 'seed', 'debug', 'enable_thinking'
                     ]
                 }
         }

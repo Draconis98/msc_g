@@ -127,16 +127,16 @@ class TrainingPipeline:
 
     def _get_lora_config(self):
         """Create LoRA configuration based on training strategy."""
-        init_lora_weights = self.config['strategy'] \
-            if self.config['strategy'].startswith(('pissa')) \
-            else True
+        init_lora_weights = True \
+            if self.config['strategy'] == 'lora' or self.config['strategy'] == 'dora' \
+                else self.config['strategy']
         
         return LoraConfig(
             init_lora_weights=init_lora_weights,
-            use_dora=False if self.config['strategy'] in ['lora', 'pissa'] else True,
+            use_dora=True if self.config['strategy'] == 'dora' else False,
             r=self.config['rank'],
             lora_alpha=self.config['rank'] \
-                if self.config['strategy'].startswith(('pissa')) \
+                if self.config['strategy'].startswith(('pissa')) or self.config['strategy'] == 'dude' \
                 else 2 * self.config['rank'],
             lora_dropout=0.0,
             target_modules=self.config['target_modules'],
@@ -175,6 +175,11 @@ class TrainingPipeline:
         logger.info("Setting up trainer...")
         # Setup model
         model = self._setup_model()
+
+        if self.config['debug']:
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    logger.debug(f"{name} requires_grad: {param.requires_grad}")
         
         # Setup training arguments
         training_args = self._get_training_args()

@@ -82,11 +82,11 @@ class LLMEvaluatingPipeline:
                     'torch_dtype': 'torch.bfloat16' if self.config['bf16'] else 'torch.float32',
                     'trust_remote_code': True,
                 },
-                'tokenizer_kwargs': {
-                    'padding_side': 'left',
-                    'truncation_side': 'left',
-                    'trust_remote_code': True
-                },
+                # 'tokenizer_kwargs': {
+                #     'padding_side': 'left',
+                #     'truncation_side': 'left',
+                #     'trust_remote_code': True
+                # }, # Since this has been set in the default opencompass config
                 'peft_path': self.output_dir,  # Add LoRA adapter path
                 'max_out_len': MAX_SEQ_LEN,
                 'batch_size': batch_size,

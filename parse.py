@@ -69,6 +69,9 @@ def setup_parser():
     parser.add_argument('--wandb_entity', type=str, required=True,
                        help='WandB entity name')
     
+    parser.add_argument('--enable_thinking', type=bool, default=False,
+                       help='Enable thinking for evaluation')
+    
     # Optional arguments with defaults from config
     for key, value in TRAINING_DEFAULTS.items():
         parser.add_argument(f'--{key}', type=type(value), default=value,
@@ -76,6 +79,9 @@ def setup_parser():
 
     parser.add_argument('--use_mirror', type=bool, default=True,
                        help='Use mirror for downloading models')
+    
+    parser.add_argument('--debug', type=bool, default=False,
+                       help='Debug mode')
     
     return parser
 
