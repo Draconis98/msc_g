@@ -54,7 +54,7 @@ cd opencompass
 uv pip install -e .
 cd .. && cd peft
 uv pip install -e .
-uv pip install trl logulu wandb gputil ninja nvitop
+uv pip install trl loguru wandb gputil ninja nvitop
 uv pip install flash-attn --no-build-isolation
 ```
 
