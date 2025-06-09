@@ -53,8 +53,8 @@ class Sweep:
                         'learning_rate', 'learning_schedule', 'rank', 'epochs',
                         'batch_size', 'save_steps', 'save_total_limit',
                         'gradient_checkpointing', 'gradient_accumulation_steps',
-                        'warmup_ratio', 'packing', 'max_seq_length',
-                        'overwrite_output_dir', 'bf16', 'use_cache',
+                        'warmup_ratio', 'packing', 'max_seq_length', 'padding_free',
+                        'overwrite_output_dir', 'bf16', 'use_cache', 'attn_implementation',
                         'task_type', 'dataset_batched', 'seed', 'debug', 'enable_thinking'
                     ]
                 }

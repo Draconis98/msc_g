@@ -14,7 +14,7 @@ from transformers import AutoModelForCausalLM
 
 from utils.config import OPENCOMPASS_DIR, OUTPUT_DIR
 
-MAX_SEQ_LEN = 512
+MAX_SEQ_LEN = 1024
 
 class LLMEvaluatingPipeline:
     """Manages the complete evaluation process including setup, running, and results processing."""

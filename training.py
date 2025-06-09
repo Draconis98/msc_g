@@ -101,6 +101,12 @@ class TrainingPipeline:
 
     def _get_training_args(self):
         """Create training arguments for the SFT trainer."""
+        """
+            Args:
+                max_length: Truncate input sequences to reduce memory usage
+        """
+
+
         return SFTConfig(
             bf16=self.config['bf16'],
             learning_rate=self.config['learning_rate'],
@@ -111,7 +117,8 @@ class TrainingPipeline:
             gradient_checkpointing_kwargs={"use_reentrant": False},
             gradient_accumulation_steps=self.config['gradient_accumulation_steps'],
             warmup_ratio=self.config['warmup_ratio'],
-            max_seq_length=self.config['max_seq_length'],
+            # Note: Starting from TRL v0.16, this parameter was changed from max_seq_length to max_length
+            max_length=self.config['max_seq_length'], 
             output_dir=self.output_dir,
             overwrite_output_dir=self.config['overwrite_output_dir'],
             save_steps=self.config['save_steps'],
@@ -122,6 +129,7 @@ class TrainingPipeline:
             optim="adamw_torch",
             report_to="wandb",  # Enable wandb logging
             packing=self.config['packing'],
+            padding_free=self.config['padding_free'],
             dataset_text_field="text",
         )
 
@@ -149,7 +157,7 @@ class TrainingPipeline:
             use_cache=self.config['use_cache'],
             trust_remote_code=True,
             torch_dtype=torch.bfloat16 if self.config['bf16'] else torch.float32,
-            attn_implementation="flash_attention_2",
+            attn_implementation=self.config['attn_implementation'],
             device_map="auto",
         )
         

@@ -18,6 +18,7 @@ TRAINING_DEFAULTS = {
     "gradient_accumulation_steps": 128,
     "warmup_ratio": 0.03,
     "packing": False,
+    "padding_free": False,
     "max_seq_length": 4096,
     "overwrite_output_dir": True,
     "bf16": True,
@@ -46,7 +47,8 @@ class ConfigManager:
             'target_modules': wandb.config.target_modules,
             'bf16': wandb.config.bf16,
             'use_cache': wandb.config.use_cache,
-            
+            'attn_implementation': wandb.config.attn_implementation,
+
             # Task and dataset configuration
             'dataset': wandb.config.dataset,
             'eval_dataset': wandb.config.eval_dataset,
@@ -62,6 +64,7 @@ class ConfigManager:
             'gradient_accumulation_steps': wandb.config.gradient_accumulation_steps,
             'warmup_ratio': wandb.config.warmup_ratio,
             'packing': wandb.config.packing,
+            'padding_free': wandb.config.padding_free,
             'max_seq_length': wandb.config.max_seq_length,
             'task_type': wandb.config.task_type,
             

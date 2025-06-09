@@ -69,6 +69,8 @@ def setup_parser():
     parser.add_argument('--wandb_entity', type=str, required=True,
                        help='WandB entity name')
     
+    parser.add_argument('--attn_implementation', type=str, default='sdpa',
+                       help='Attention implementation, including sdpa, flash_attention_2 and eager')
     parser.add_argument('--enable_thinking', type=bool, default=False,
                        help='Enable thinking for evaluation')
     

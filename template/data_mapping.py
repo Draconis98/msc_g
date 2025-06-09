@@ -11,4 +11,5 @@ dataset_mapping = {
         "Idavidrein/gpqa": ("gpqa_main,gpqa_extended", "train", "template.gpqa"),
         "TsinghuaC3I/MedXpertQA": (None, "train", "template.medxpertqa"),
         "EricLu/SCP-116K": (None, "train", "template.scp"),
+        "zwhe99/DeepMath-103K": (None, "train", "template.deepmath"),
         }
