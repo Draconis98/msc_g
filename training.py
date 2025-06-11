@@ -170,7 +170,7 @@ class TrainingPipeline:
             use_cache=self.config['use_cache'],
             trust_remote_code=True,
             torch_dtype=torch.bfloat16 if self.config['bf16'] else torch.float32,
-            # attn_implementation=self.config['attn_implementation'],
+            attn_implementation=self.config['attn_implementation'],
             device_map="auto",
         )
         
