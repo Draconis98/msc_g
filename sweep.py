@@ -27,7 +27,7 @@ class Sweep:
             expected_run_count (int): The expected run count of the sweep.
         """
         self.args = args
-        self.sweep_id = None
+        self.sweep_id = args.sweep_id
         self.sweep_config = None
         self.sweep_path = None
         self.expected_run_count = None
@@ -55,11 +55,11 @@ class Sweep:
                         'gradient_checkpointing', 'gradient_accumulation_steps',
                         'warmup_ratio', 'packing', 'max_seq_length', 'padding_free',
                         'overwrite_output_dir', 'bf16', 'use_cache', 'attn_implementation',
-                        'task_type', 'dataset_batched', 'seed', 'debug', 'enable_thinking'
+                        'task_type', 'dataset_batched', 'seed', 'debug', 'enable_thinking', 
                     ]
                 }
-        }
-        
+            }
+            
             # Handle target_modules separately
             config['parameters']['target_modules'] = {
                 'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
@@ -85,7 +85,11 @@ class Sweep:
             str: The sweep ID.
         """
         try:
-            # Create sweep using wandb API
+            if self.args.resume and self.args.sweep_id:
+                logger.info(f"[Resume] Reuse the unfinished sweep: {self.args.sweep_id}")
+                self.sweep_id = self.args.sweep_id
+                self.sweep_config = self.api.sweep(self.sweep_config['entity'] + "/" + self.sweep_config['project'] + "/" + self.sweep_id).config
+                return
             self.sweep_id = wandb.sweep(self.sweep_config, project=self.sweep_config['project'])
         except Exception as e:
             logger.error("Failed to setup sweep: %s", str(e))
@@ -128,6 +132,73 @@ class Sweep:
 
         self._start_agent()
 
+
+class ResumeRun:
+    """Class to handle resuming a specific W&B run."""
+    
+    def __init__(self, run_id):
+        """Initialize the ResumeRun with command line arguments.
+        
+        Args:
+            args (argparse.Namespace): Command line arguments containing run_id.
+        """
+        self.api = wandb.Api()
+        self.run_id = run_id
+        
+    def _get_run_info(self):
+        """Get run information and validate its status.
+        
+        Returns:
+            wandb.Run: W&B run object or None if cannot resume
+        """
+        try:
+            run = self.api.run(self.run_id)
+            
+            logger.info(f"Found run: {run.name}")
+                
+            return run
+            
+        except wandb.errors.CommError as e:
+            logger.error(f"Network error while accessing run: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get run information: {e}")
+            raise
+    
+    # def _resume_run(self):
+    #     """Resume the specified W&B run."""
+    #     try:
+    #         # Resume run using run_id
+    #         wandb.init(
+    #             id=self.run_id,
+    #             resume="must"
+    #         )
+    #         logger.success(f"Successfully resumed run: {self.run_id}")
+            
+    #         # Run the pipeline
+    #         pipeline(resume=True)
+            
+    #     except Exception as e:
+    #         logger.error(f"Failed to resume run: {e}")
+    #         raise
+    #     finally:
+    #         try:
+    #             wandb.finish()
+    #         except Exception as e:
+    #             logger.error(f"Error finishing run: {e}")
+    
+    def run(self):
+        """Execute the run resumption process."""
+        run_info = self._get_run_info()
+        
+        if run_info is None:
+            logger.error("Cannot resume finished run")
+            return
+            
+        logger.info(f"Starting to resume run: {self.run_id}")
+        pipeline(resume=True, run_id=self.run_id)
+        logger.success("Run resumption completed")
+
 # WANDB: Weights and Biases
 def run(args):
     """Main function to setup and run a wandb sweep.
@@ -135,4 +206,7 @@ def run(args):
     Args:
         args (argparse.Namespace): Command line arguments.
     """
-    Sweep(args).run()
+    if args.resume:
+        ResumeRun(args.run_id).run()
+    else:
+        Sweep(args).run()

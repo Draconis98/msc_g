@@ -19,15 +19,21 @@ MAX_SEQ_LEN = 1024
 class LLMEvaluatingPipeline:
     """Manages the complete evaluation process including setup, running, and results processing."""
     
-    def __init__(self, config):
+    def __init__(self, config, resume=False):
         """Initialize evaluator with configuration and output directory."""
         self.config = config
-        self.output_dir = os.path.join(OUTPUT_DIR, wandb.run.name.replace("-", "/"))
-        self.eval_dir = os.path.join(self.output_dir, "eval")
+        self.output_dir = None
         self.model_config = None
         self.config_filename = None
         self.summary_dir = None
-        
+        self.resume = resume
+
+        if not self.resume:
+            self.output_dir = os.path.join(OUTPUT_DIR, wandb.run.name.replace("-", "/"))
+        else:
+            self.output_dir = self.config['output_dir']
+        self.eval_dir = os.path.join(self.output_dir, "eval")
+
     def _find_optimal_batch_size(self):
         """Calculate batch size based on available GPU memory and model size."""
         try:
@@ -201,7 +207,6 @@ class LLMEvaluatingPipeline:
         """Log a single row of results to wandb."""
         try:
             dataset = row['dataset']
-            version = row['version']
             metric = row['metric']
             mode = row['mode']
             value = float(row[model_column])
@@ -242,12 +247,16 @@ class LLMEvaluatingPipeline:
         opencompass_run = os.path.join(OPENCOMPASS_DIR, "run.py")
         
         try:
-            result = subprocess.run([
+            cmd = [
                 "python", opencompass_run,
                 "--models", self.config_filename,
                 *["--datasets"] + [dataset for dataset in self.config['eval_dataset']],
                 "-w", self.eval_dir
-            ], check=True, capture_output=True, text=True, encoding="utf-8")
+            ]
+            if self.resume:
+                cmd.append("-r")
+                
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8")
             logger.info(result.stdout)
         except subprocess.CalledProcessError as e:
             logger.error("Evaluation failed: %s", e.stderr)

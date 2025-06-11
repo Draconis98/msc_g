@@ -26,13 +26,16 @@ def cleanup_gpu_memory():
 class TrainingPipeline:
     """Manages the training pipeline."""
     
-    def __init__(self, config):
+    def __init__(self, config, resume=False):
         """Initialize training pipeline with configuration."""
         self.config = config
         self.output_dir = None
         self.tokenizer = None
         self.processed_dataset = None
         self.trainer = None
+        self.resume = resume
+        self.resume_from_checkpoint = None
+        self.final_exists = False
         
     def __del__(self):
         """Cleanup resources when the object is destroyed."""
@@ -72,14 +75,18 @@ class TrainingPipeline:
         """Setup training environment and resources."""
         # Setup wandb run name
         try:
-            wandb.run.name = self._create_run_name()
+            if not self.resume:
+                wandb.run.name = self._create_run_name()
         except Exception as e:
             logger.error(f"Failed to set wandb run name: {str(e)}")
             raise
         
         # Setup output directory
         try:
-            self.output_dir = os.path.join(OUTPUT_DIR, wandb.run.name.replace("-", "/"))
+            if not self.resume:
+                self.output_dir = os.path.join(OUTPUT_DIR, wandb.run.name.replace("-", "/"))
+            else:
+                self.output_dir = self.config['output_dir']
             eval_dir = os.path.join(self.output_dir, "eval")
             os.makedirs(eval_dir, exist_ok=True)
             logger.info(f"Evaluation directory: {eval_dir} exists.")
@@ -88,6 +95,12 @@ class TrainingPipeline:
             raise
         
         logger.success("Training pipeline setup completed")
+
+        if self.resume:
+            final_files = ['adapter_config.json', 'adapter_model.safetensors', 'README.md']
+            self.final_exists = all(os.path.exists(os.path.join(self.output_dir, f)) for f in final_files)
+            if not self.final_exists:
+                self.resume_from_checkpoint = self._find_latest_checkpoint()
         
     def _prepare_data(self):
         """Load and process training data."""
@@ -157,7 +170,7 @@ class TrainingPipeline:
             use_cache=self.config['use_cache'],
             trust_remote_code=True,
             torch_dtype=torch.bfloat16 if self.config['bf16'] else torch.float32,
-            attn_implementation=self.config['attn_implementation'],
+            # attn_implementation=self.config['attn_implementation'],
             device_map="auto",
         )
         
@@ -172,11 +185,23 @@ class TrainingPipeline:
             peft_model = get_peft_model(model, lora_config)
 
             # Log LoRA configuration to wandb
-            wandb.config.update({"lora_config": lora_config.__dict__})
+            if not self.resume:
+                wandb.config.update({"lora_config": lora_config.__dict__})
         else:
             peft_model = model
         
         return peft_model
+    
+    def _find_latest_checkpoint(self):
+        """Find the latest checkpoint directory in the output_dir, return None if not found."""
+        if self.output_dir is None or not os.path.exists(self.output_dir):
+            return None
+        checkpoints = [d for d in os.listdir(self.output_dir) if d.startswith('checkpoint-')]
+        if not checkpoints:
+            return None
+        # Get the largest step number
+        latest_ckpt = max(checkpoints, key=lambda x: int(x.split('-')[-1]) if x.split('-')[-1].isdigit() else -1)
+        return os.path.join(self.output_dir, latest_ckpt)
     
     def _setup_trainer(self):
         """Setup the trainer."""
@@ -197,13 +222,18 @@ class TrainingPipeline:
             args=training_args,
             train_dataset=self.processed_dataset,
         )
+
         logger.success("Trainer setup completed")
         
     def train(self):
         """Run the training process."""
         logger.info("Starting training...")
         try:
-            train_result = self.trainer.train()
+            if self.resume_from_checkpoint:
+                logger.info(f"Resume from checkpoint: {self.resume_from_checkpoint}")
+            else:
+                logger.info("No checkpoint found, start from scratch")
+            train_result = self.trainer.train(resume_from_checkpoint=self.resume_from_checkpoint)
             metrics = train_result.metrics
             
             # Log metrics
@@ -224,6 +254,9 @@ class TrainingPipeline:
     def run(self):
         """Run the complete training pipeline."""
         self._setup()
-        self._prepare_data()
-        self._setup_trainer()
-        self.train()
+        if not self.final_exists:
+            self._prepare_data()
+            self._setup_trainer()
+            self.train()
+        else:
+            logger.info("Final step exists, skip training")

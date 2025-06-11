@@ -24,7 +24,7 @@ TRAINING_DEFAULTS = {
     "bf16": True,
     "use_cache": False,
     "dataset_batched": False,
-    "seed": 42,
+    # "seed": 42,
 }
 
 # Task types

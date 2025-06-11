@@ -39,6 +39,22 @@ def setup_parser():
         argparse.ArgumentParser: The argument parser.
     """
     parser = argparse.ArgumentParser(description="Process training parameters.")
+    parser.add_argument('--use_mirror', type=bool, default=True,
+                       help='Use mirror for downloading models')
+    parser.add_argument('--seed', type=int, default=42,
+                       help='Random seed')
+
+    # Resume configuration
+    parser.add_argument('--resume', type=bool, default=False,
+                       help='Resume training and evaluation')
+    parser.add_argument('--run_id', type=str, default=None,
+                       help='W&B Run ID')
+    args, _ = parser.parse_known_args()
+    if args.resume:
+        if args.run_id is None:
+            raise ValueError("Run ID is required when resuming")
+        return parser
+
     
     # Required arguments
     parser.add_argument('-s', '--strategy', type=lambda x: x.split(','), required=True,
@@ -78,9 +94,6 @@ def setup_parser():
     for key, value in TRAINING_DEFAULTS.items():
         parser.add_argument(f'--{key}', type=type(value), default=value,
                           help=f'{key.replace("_", " ").title()} (default: {value})')
-
-    parser.add_argument('--use_mirror', type=bool, default=True,
-                       help='Use mirror for downloading models')
     
     parser.add_argument('--debug', type=bool, default=False,
                        help='Debug mode')
