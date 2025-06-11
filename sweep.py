@@ -136,7 +136,7 @@ class Sweep:
 class ResumeRun:
     """Class to handle resuming a specific W&B run."""
     
-    def __init__(self, run_id):
+    def __init__(self, run_id, eval_dataset):
         """Initialize the ResumeRun with command line arguments.
         
         Args:
@@ -144,6 +144,7 @@ class ResumeRun:
         """
         self.api = wandb.Api()
         self.run_id = run_id
+        self.eval_dataset = eval_dataset
         
     def _get_run_info(self):
         """Get run information and validate its status.
@@ -155,7 +156,12 @@ class ResumeRun:
             run = self.api.run(self.run_id)
             
             logger.info(f"Found run: {run.name}")
-                
+
+            if self.eval_dataset is not None:
+                logger.info(f"Update eval_dataset: {self.eval_dataset}")
+                run.config['eval_dataset'] = self.eval_dataset
+                run.update()
+
             return run
             
         except wandb.errors.CommError as e:
@@ -164,28 +170,6 @@ class ResumeRun:
         except Exception as e:
             logger.error(f"Failed to get run information: {e}")
             raise
-    
-    # def _resume_run(self):
-    #     """Resume the specified W&B run."""
-    #     try:
-    #         # Resume run using run_id
-    #         wandb.init(
-    #             id=self.run_id,
-    #             resume="must"
-    #         )
-    #         logger.success(f"Successfully resumed run: {self.run_id}")
-            
-    #         # Run the pipeline
-    #         pipeline(resume=True)
-            
-    #     except Exception as e:
-    #         logger.error(f"Failed to resume run: {e}")
-    #         raise
-    #     finally:
-    #         try:
-    #             wandb.finish()
-    #         except Exception as e:
-    #             logger.error(f"Error finishing run: {e}")
     
     def run(self):
         """Execute the run resumption process."""
@@ -207,6 +191,6 @@ def run(args):
         args (argparse.Namespace): Command line arguments.
     """
     if args.resume:
-        ResumeRun(args.run_id).run()
+        ResumeRun(args.run_id, args.eval_dataset).run()
     else:
         Sweep(args).run()

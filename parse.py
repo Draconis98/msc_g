@@ -53,6 +53,8 @@ def setup_parser():
     if args.resume:
         if args.run_id is None:
             raise ValueError("Run ID is required when resuming")
+        parser.add_argument('-ed', '--eval_dataset', type=lambda x: x.split(','), default=None,
+                       help='Name of the evaluation dataset (comma-separated list, e.g. mmlu_gen,gsm8k_gen)')
         return parser
 
     
