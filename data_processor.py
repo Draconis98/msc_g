@@ -18,7 +18,7 @@ def get_tokenizer(model_name):
         tokenizer.padding_side = 'right'
         return tokenizer
     except Exception as e:
-        logger.error(f"Failed to get tokenizer: {str(e)}")
+        logger.error(f"Tokenizer initialization failed: {str(e)}")
         raise
 
 def apply_chat_template(dataset_name, example, tokenizer):
@@ -63,10 +63,9 @@ def load_and_process_data(model_name, dataset_name, batched):
     elif ',' not in subset:
         dataset = load_dataset(dataset_name, name=subset, split=split, trust_remote_code=True)
     else:
-        subsets = subset.split(',')
         datasets_list = [
-            load_dataset(dataset_name, name=subset, split=split, trust_remote_code=True)
-            for subset in tqdm(subsets, desc="Loading datasets")
+            load_dataset(dataset_name, name=s, split=split, trust_remote_code=True)
+            for s in tqdm(subset.split(','), desc="Loading datasets")
         ]
         dataset = concatenate_datasets(datasets_list)
     

@@ -26,7 +26,7 @@ def cleanup_gpu_memory():
 class TrainingPipeline:
     """Manages the training pipeline."""
     
-    def __init__(self, config, resume=False):
+    def __init__(self, config, resume=False, debug=False):
         """Initialize training pipeline with configuration."""
         self.config = config
         self.output_dir = None
@@ -36,6 +36,7 @@ class TrainingPipeline:
         self.resume = resume
         self.resume_from_checkpoint = None
         self.final_exists = False
+        self.debug = debug
         
     def __del__(self):
         """Cleanup resources when the object is destroyed."""
@@ -62,13 +63,33 @@ class TrainingPipeline:
     
     def _create_run_name(self):
         """Create a standardized run name from configuration."""
-        run_name = f"{self.config['strategy']}-{self.config['model_name']}-{self.config['task_type']}-" \
-                f"{self.config['dataset']}-{self.config['learning_rate']}-{self.config['epochs']}epochs-" \
-                f"{self.config['batch_size']}bs-{self.config['gradient_accumulation_steps']}accum-" \
-                f"{self.config['warmup_ratio']}warmup-{self.config['max_seq_length']}max_seq_len-" \
-                f"{self.config['packing']}packing"
+        name_components = [
+            self.config['strategy'],
+            self.config['model_name'].split('/')[-1],
+            self.config['task_type'].lower(),
+            self.config['dataset'].split('/')[-1],
+            f"lr{self.config['learning_rate']}",
+            f"{self.config['epochs']}ep",
+            f"bs{self.config['batch_size']}",
+            f"acc{self.config['gradient_accumulation_steps']}",
+            f"warm{self.config['warmup_ratio']}",
+            f"seq{self.config['max_seq_length']}",
+        ]
+        
         if self.config['strategy'] != 'fft':
-            run_name += f"-r{self.config['rank']}"
+            name_components.append(f"r{self.config['rank']}")
+            
+        if self.config['packing']:
+            name_components.append("packed")
+
+        if self.config['padding_free']:
+            name_components.append("padding_free")
+
+        run_name = "-".join(name_components)
+
+        if self.debug:
+            logger.debug(f"Run name: {run_name}")
+
         return run_name
         
     def _setup(self):
@@ -84,17 +105,21 @@ class TrainingPipeline:
         # Setup output directory
         try:
             if not self.resume:
-                self.output_dir = os.path.join(OUTPUT_DIR, wandb.run.name.replace("-", "/"))
+                self.output_dir = os.path.join(
+                    OUTPUT_DIR, 
+                    wandb.run.name.replace("-", "/")
+                )
             else:
                 self.output_dir = self.config['output_dir']
             eval_dir = os.path.join(self.output_dir, "eval")
             os.makedirs(eval_dir, exist_ok=True)
-            logger.info(f"Evaluation directory: {eval_dir} exists.")
+            if self.debug:
+                logger.debug(f"Evaluation directory: {eval_dir} exists.")
         except Exception as e:
-            logger.error(f"Failed to setup output directory: {str(e)}")
+            logger.error(f"Output directory setup failed: {str(e)}")
             raise
         
-        logger.success("Training pipeline setup completed")
+        logger.success("Training pipeline setup")
 
         if self.resume:
             final_files = ['adapter_config.json', 'adapter_model.safetensors', 'README.md']
@@ -106,19 +131,18 @@ class TrainingPipeline:
         """Load and process training data."""
         logger.info(f"Loading and processing data for {self.config['dataset']}...")
         try:
-            self.tokenizer, self.processed_dataset = load_and_process_data(self.config['model_name'], self.config['dataset'], self.config['dataset_batched'])
+            self.tokenizer, self.processed_dataset = load_and_process_data(
+                self.config['model_name'], self.config['dataset'], self.config['dataset_batched'])
         except Exception as e:
-            logger.error(f"Failed to load and process data: {str(e)}")
+            logger.error(f"Data preparation failed: {str(e)}")
             raise
-        logger.success("Data preparation completed")
 
     def _get_training_args(self):
-        """Create training arguments for the SFT trainer."""
-        """
-            Args:
-                max_length: Truncate input sequences to reduce memory usage
-        """
+        """Create training arguments for the SFT trainer.
 
+        Args:
+            max_length: Truncate input sequences to reduce memory usage
+        """
 
         return SFTConfig(
             bf16=self.config['bf16'],
@@ -175,9 +199,8 @@ class TrainingPipeline:
         )
         
         # Load the model without device mapping first
-        model_name = self.config['model_name']
         model = AutoModelForCausalLM.from_pretrained(
-            model_name, 
+            pretrained_model_name_or_path=self.config['model_name'], 
             **model_kwargs)
         
         if self.config['strategy'] != 'fft':
@@ -194,7 +217,7 @@ class TrainingPipeline:
     
     def _find_latest_checkpoint(self):
         """Find the latest checkpoint directory in the output_dir, return None if not found."""
-        if self.output_dir is None or not os.path.exists(self.output_dir):
+        if not self.output_dir or not os.path.exists(self.output_dir):
             return None
         checkpoints = [d for d in os.listdir(self.output_dir) if d.startswith('checkpoint-')]
         if not checkpoints:
@@ -209,7 +232,7 @@ class TrainingPipeline:
         # Setup model
         model = self._setup_model()
 
-        if self.config['debug']:
+        if self.debug:
             for name, param in model.named_parameters():
                 if param.requires_grad:
                     logger.debug(f"{name} requires_grad: {param.requires_grad}")
@@ -231,8 +254,6 @@ class TrainingPipeline:
         try:
             if self.resume_from_checkpoint:
                 logger.info(f"Resume from checkpoint: {self.resume_from_checkpoint}")
-            else:
-                logger.info("No checkpoint found, start from scratch")
             train_result = self.trainer.train(resume_from_checkpoint=self.resume_from_checkpoint)
             metrics = train_result.metrics
             
@@ -248,8 +269,9 @@ class TrainingPipeline:
             return metrics
         
         except Exception as e:
+            logger.error(f"Training failed: {str(e)}")
             wandb.log({"training_error": str(e)})
-            raise e
+            raise
         
     def run(self):
         """Run the complete training pipeline."""

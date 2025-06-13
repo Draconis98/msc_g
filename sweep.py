@@ -32,6 +32,7 @@ class Sweep:
         self.sweep_path = None
         self.expected_run_count = None
         self.api = wandb.Api()
+        self.debug = args.debug
 
     def _create_sweep_config(self):
         """Create a wandb sweep configuration from command line arguments.
@@ -143,7 +144,7 @@ class Sweep:
     def _start_agent(self):
         """Start a W&B agent on specified GPUs."""
         try:
-            wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
+            wandb.agent(self.sweep_id, function=pipeline(debug=self.debug), project=self.sweep_config['project'])
         except Exception as e:
             logger.error("Failed to start agent: %s", str(e))
             raise
@@ -161,7 +162,7 @@ class Sweep:
 class ResumeRun:
     """Class to handle resuming a specific W&B run."""
     
-    def __init__(self, run_id, eval_dataset):
+    def __init__(self, run_id, eval_dataset, debug):
         """Initialize the ResumeRun with command line arguments.
         
         Args:
@@ -170,6 +171,7 @@ class ResumeRun:
         self.api = wandb.Api()
         self.run_id = run_id
         self.eval_dataset = eval_dataset
+        self.debug = debug
         
     def _get_run_info(self):
         """Get run information and validate its status.
@@ -205,7 +207,7 @@ class ResumeRun:
             return
             
         logger.info(f"Starting to resume run: {self.run_id}")
-        pipeline(resume=True, run_id=self.run_id)
+        pipeline(resume=True, run_id=self.run_id, debug=self.debug)
         logger.success("Run resumption completed")
 
 # WANDB: Weights and Biases
@@ -216,6 +218,6 @@ def run(args):
         args (argparse.Namespace): Command line arguments.
     """
     if args.resume:
-        ResumeRun(args.run_id, args.eval_dataset).run()
+        ResumeRun(args.run_id, args.eval_dataset, args.debug).run()
     else:
         Sweep(args).run()

@@ -23,48 +23,45 @@ def cleanup_gpu_memory():
         torch.cuda.empty_cache()
     gc.collect()
 
-def pipeline(resume=False, run_id=None):
+def pipeline(resume=False, run_id=None, debug=False):
     """Main pipeline execution."""
     
     # Initialize wandb
     if not resume:
         try:
             wandb.init()
-            logger.success("Wandb initialized successfully")
+            logger.success("Wandb initialized")
         except Exception as e:
-            logger.error(f"Failed to initialize wandb: {e}")
+            logger.error(f"Wandb initialization failed: {e}")
             raise
         
         # Create and validate configuration
         try:
             config = ConfigManager.create_config()
-            ConfigManager.validate_config(config)
         except Exception as e:
-            logger.error(f"Failed to create or validate configuration: {e}")
+            logger.error(f"Configuration creation failed: {e}")
             raise
     else:
         try:
             entity, project, id = map(str, run_id.split("/"))
             wandb.init(entity=entity, project=project, id=id, resume="must")
-            logger.success("Wandb resumed successfully")
+            logger.success("Wandb resumed")
             config = wandb.Api().run(run_id).config
-            # import json
-            # logger.info(f"Resumed wandb config: {json.dumps(config, indent=2, ensure_ascii=False)}")
         except Exception as e:
-            logger.error(f"Failed to resume wandb: {e}")
+            logger.error(f"Wandb resume failed: {e}")
             raise
     
     # Run training pipeline
     try:
         logger.info("Starting training pipeline...")
-        training = TrainingPipeline(config, resume=resume)
+        training = TrainingPipeline(config, resume=resume, debug=debug)
         training.run()
 
         # NOTE: Don't know why but it's necessary to call this function again after training
         del training
         cleanup_gpu_memory()
     except Exception as e:
-        logger.error(f"Failed to run training pipeline: {e}")
+        logger.error(f"Training pipeline failed: {e}")
         raise
 
     # Run evaluation pipeline
@@ -73,7 +70,7 @@ def pipeline(resume=False, run_id=None):
         evaluating = LLMEvaluatingPipeline(config, resume=resume)
         evaluating.run()
     except Exception as e:
-        logger.error(f"Failed to run evaluation pipeline: {e}")
+        logger.error(f"Evaluation pipeline failed: {e}")
         raise
     
-    logger.success("Pipeline completed successfully")
+    logger.success("Pipeline completed")
