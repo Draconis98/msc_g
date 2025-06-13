@@ -5,8 +5,9 @@ from loguru import logger
 import wandb
 
 # Base paths
-BASE_DIR = os.path.expanduser("~/codes")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
+OPENCOMPASS_DIR = os.path.join(BASE_DIR, "opencompass")
 
 # Training defaults
 TRAINING_DEFAULTS = {
@@ -24,14 +25,11 @@ TRAINING_DEFAULTS = {
     "bf16": True,
     "use_cache": False,
     "dataset_batched": False,
-    # "seed": 42,
 }
 
 # Task types
-TASK_TYPES = ['CAUSAL_LM', 'SEQ_CLS', 'SEQ_2_SEQ_LM', 'TOKEN_CLS', 'QUESTION_ANS', 'FEATURE_EXTRACTION']
-
-# OpenCompass configuration
-OPENCOMPASS_DIR = os.path.join(BASE_DIR, "opencompass")
+TASK_TYPES = ['CAUSAL_LM', 'SEQ_CLS', 'SEQ_2_SEQ_LM', 'TOKEN_CLS', \
+              'QUESTION_ANS', 'FEATURE_EXTRACTION']
 
 class ConfigManager:
     """Manages configuration for the training pipeline."""
@@ -41,10 +39,8 @@ class ConfigManager:
         """Create configuration dictionary from wandb config."""
         config = {
             # Model configuration
-            'model_name': wandb.config.model_name,
             'strategy': wandb.config.strategy,
-            'rank': wandb.config.rank,
-            'target_modules': wandb.config.target_modules,
+            'model_name': wandb.config.model_name,
             'bf16': wandb.config.bf16,
             'use_cache': wandb.config.use_cache,
             'attn_implementation': wandb.config.attn_implementation,
@@ -57,8 +53,7 @@ class ConfigManager:
             # Training configuration
             'epochs': wandb.config.epochs,
             'batch_size': wandb.config.batch_size,
-            'learning_rate': wandb.config.learning_rate if wandb.config.strategy != 'fft' 
-                            else wandb.config.learning_rate / 10,
+            'learning_rate': wandb.config.learning_rate,
             'learning_schedule': wandb.config.learning_schedule,
             'gradient_checkpointing': wandb.config.gradient_checkpointing,
             'gradient_accumulation_steps': wandb.config.gradient_accumulation_steps,
@@ -78,52 +73,11 @@ class ConfigManager:
             
             # Add seed configuration
             'seed': wandb.config.seed,
-
-            # Debug configuration
-            'debug': wandb.config.debug,
         }
+
+        if wandb.config.strategy != 'fft':
+            for param in ['target_modules', 'rank']:
+                config[param] = getattr(wandb.config, param)
         
         logger.success("Configuration created successfully")
         return config
-    
-    @staticmethod
-    def validate_config(config):
-        """Validate configuration parameters."""
-        required_fields = [
-            'model_name', 'strategy', 'dataset', 'eval_dataset',
-            'learning_rate', 'epochs', 'batch_size'
-        ]
-        
-        for field in required_fields:
-            if field not in config:
-                raise ValueError(f"Missing required configuration field: {field}")
-            
-        if config['learning_rate'] <= 0:
-            raise ValueError("Learning rate must be positive")
-            
-        if config['epochs'] <= 0:
-            raise ValueError("Number of epochs must be positive")
-            
-        if config['batch_size'] <= 0:
-            raise ValueError("Batch size must be positive")
-        
-        logger.success("Configuration validated successfully")
-        return True
-    
-    @staticmethod
-    def log_config(config):
-        """Log configuration parameters."""
-        logger.info("Current configuration:")
-        for key, value in config.items():
-            logger.info("  %s: %s", key, value)
-            
-    @staticmethod
-    def update_config(config, updates):
-        """Update configuration with new values."""
-        for key, value in updates.items():
-            if key in config:
-                config[key] = value
-                logger.info("Updated %s to %s", key, value)
-            else:
-                logger.warning("Attempted to update non-existent config key: %s", key)
-        return config 

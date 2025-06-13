@@ -43,37 +43,66 @@ class Sweep:
             config = {
                 'entity': self.args.wandb_entity,
                 'project': self.args.wandb_project,
-                'method': 'grid',
+                'method': self.args.sweep_method,
                 'parameters': {
                     key: {'values': [getattr(self.args, key)] 
                         if not isinstance(getattr(self.args, key), list) 
                         else getattr(self.args, key)}
                     for key in [
+                        # Training strategy and model configuration
                         'strategy', 'model_name', 'dataset', 'eval_dataset',
-                        'learning_rate', 'learning_schedule', 'rank', 'epochs',
-                        'batch_size', 'save_steps', 'save_total_limit',
-                        'gradient_checkpointing', 'gradient_accumulation_steps',
-                        'warmup_ratio', 'packing', 'max_seq_length', 'padding_free',
+                        # Batch processing and saving configuration
+                        'save_steps', 'save_total_limit',
+                        # Gradient and optimization configuration
+                        'gradient_checkpointing', 'gradient_accumulation_steps', 'warmup_ratio', 
+                        # Data processing configuration
+                        'packing', 'max_seq_length', 'padding_free',
+                        # Output and precision configuration
                         'overwrite_output_dir', 'bf16', 'use_cache', 'attn_implementation',
-                        'task_type', 'dataset_batched', 'seed', 'debug', 'enable_thinking', 
+                        # Task and debugging configuration
+                        'task_type', 'dataset_batched', 'seed', 'enable_thinking', 
                     ]
                 }
             }
-            
+
+            if config['method'] != 'grid':
+                config.update({
+                    'metric': {
+                        'name': self.args.sweep_metric,
+                        'goal': 'maximize' if self.args.sweep_metric in \
+                            ['eval_accuracy', 'eval_f1', 'eval_rouge', 'eval_bleu', 'eval_meteor', 'eval_bertscore', \
+                             'eval_rouge_l', 'eval_rouge_l_summary', 'eval_rouge_l_summary_f1', 'eval_rouge_l_summary_recall', \
+                             'eval_rouge_l_summary_precision'] else 'minimize'
+                    }
+                })
+
+                min_lr = min(self.args.learning_rate)
+                max_lr = max(self.args.learning_rate)
+                config['parameters']['learning_rate'] = {'min': min_lr, 'max': max_lr}
+                for param in ['batch_size', 'epochs', 'rank']:
+                    param_value = getattr(self.args, param)
+                    config['parameters'][param] = {
+                        'values': [param_value] if isinstance(param_value, list) else [[param_value]]
+                    }
+            else:
+                for param in ['learning_rate', 'batch_size', 'epochs', 'rank']:
+                    config['parameters'][param] = {
+                        'values': getattr(self.args, param)
+                    }
+
             # Handle target_modules separately
-            config['parameters']['target_modules'] = {
-                'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
-            }
+            if self.args.strategy != 'fft':
+                config['parameters']['target_modules'] = {
+                    'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
+                }
             
             config['parameters']['eval_dataset'] = {
                 'values': [self.args.eval_dataset] if isinstance(self.args.eval_dataset, list) else [[self.args.eval_dataset]]
             }
             
-            config['parameters']['learning_rate'] = {
-                'values': self.args.learning_rate  # Use the list of learning rates
-            }
-            
             self.sweep_config = config
+        except ValueError as e:
+            raise ValueError(f"Invalid sweep configuration: {e}") from e
         except Exception as e:
             logger.error("Failed to create sweep configuration: %s", str(e))
             raise
@@ -85,11 +114,6 @@ class Sweep:
             str: The sweep ID.
         """
         try:
-            if self.args.resume and self.args.sweep_id:
-                logger.info(f"[Resume] Reuse the unfinished sweep: {self.args.sweep_id}")
-                self.sweep_id = self.args.sweep_id
-                self.sweep_config = self.api.sweep(self.sweep_config['entity'] + "/" + self.sweep_config['project'] + "/" + self.sweep_id).config
-                return
             self.sweep_id = wandb.sweep(self.sweep_config, project=self.sweep_config['project'])
         except Exception as e:
             logger.error("Failed to setup sweep: %s", str(e))
@@ -128,7 +152,8 @@ class Sweep:
         """Run the sweep on available GPUs."""
         self._create_sweep_config()
         self._setup_configuration()
-        logger.info(f"Expected run count: {self._get_expected_run_count()}")
+        if self.args.sweep_method == 'grid':
+            logger.info(f"Expected run count: {self._get_expected_run_count()}")
 
         self._start_agent()
 
@@ -153,16 +178,16 @@ class ResumeRun:
             wandb.Run: W&B run object or None if cannot resume
         """
         try:
-            run = self.api.run(self.run_id)
+            wandb_run = self.api.run(self.run_id)
             
-            logger.info(f"Found run: {run.name}")
+            logger.info(f"Found run: {wandb_run.name}")
 
             if self.eval_dataset is not None:
                 logger.info(f"Update eval_dataset: {self.eval_dataset}")
-                run.config['eval_dataset'] = self.eval_dataset
-                run.update()
+                wandb_run.config['eval_dataset'] = self.eval_dataset
+                wandb_run.update()
 
-            return run
+            return wandb_run
             
         except wandb.errors.CommError as e:
             logger.error(f"Network error while accessing run: {e}")

@@ -40,13 +40,13 @@ def setup_parser():
     """
     parser = argparse.ArgumentParser(description="Process training parameters.")
     
-    # Base group
-    base_group = parser.add_argument_group('Base', 'Basic configuration parameters')
-    base_group.add_argument('--use_mirror', type=bool, default=True,
+    # Basic group
+    basic_group = parser.add_argument_group('Basic', 'Basic configuration parameters')
+    basic_group.add_argument('--use_mirror', type=bool, default=True,
                        help='Use mirror for downloading models')
-    base_group.add_argument('--seed', type=int, default=42,
+    basic_group.add_argument('--seed', type=int, default=42,
                        help='Random seed')
-    base_group.add_argument('--debug', type=bool, default=False,
+    basic_group.add_argument('--debug', type=bool, default=False,
                        help='Debug mode')
 
     # Resume group
@@ -85,8 +85,10 @@ def setup_parser():
                        help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
     training_group.add_argument('--attn_implementation', type=str, default='sdpa',
                        help='Attention implementation, including sdpa, flash_attention_2 and eager')
-    training_group.add_argument('-bs', '--batch_size', type=parse_str2int_list,
+    training_group.add_argument('-bs', '--batch_size', type=parse_str2int_list, default=TRAINING_DEFAULTS['batch_size'],
                        help='Batch size(s) (comma-separated list or single integer, e.g. 1,2)')
+    training_group.add_argument('--warmup_ratio', type=parse_str2float_list, default=TRAINING_DEFAULTS['warmup_ratio'],
+                       help='Warmup ratio(s) (comma-separated list or single float, e.g. 0.03,0.05)')
 
     # Evaluation group
     eval_group = parser.add_argument_group('Evaluation', 'Model evaluation configuration')
@@ -105,7 +107,7 @@ def setup_parser():
     # Default training group
     default_group = parser.add_argument_group('Defaults', 'Optional training parameters with default values')
     for key, value in TRAINING_DEFAULTS.items():
-        if key == 'batch_size':
+        if key in ['batch_size', 'warmup_ratio']:
             continue  # Skip batch_size, it is already defined in training group
         default_group.add_argument(f'--{key}', type=type(value), default=value,
                           help=f'{key.replace("_", " ").title()} (default: {value})')
