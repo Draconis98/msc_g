@@ -56,7 +56,7 @@ class Sweep:
                         # Gradient and optimization configuration
                         'gradient_checkpointing', 'gradient_accumulation_steps', 'warmup_ratio', 
                         # Data processing configuration
-                        'packing', 'max_seq_length', 'padding_free',
+                        'packing', 'max_seq_length', 'padding_free', 'max_out_len',
                         # Output and precision configuration
                         'overwrite_output_dir', 'bf16', 'use_cache', 'attn_implementation',
                         # Task and debugging configuration

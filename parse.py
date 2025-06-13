@@ -96,6 +96,8 @@ def setup_parser():
                        help='Name of the evaluation dataset (comma-separated list, e.g. mmlu_gen,gsm8k_gen)')
     eval_group.add_argument('--enable_thinking', type=bool, default=False,
                        help='Enable thinking for evaluation')
+    eval_group.add_argument('--max_out_len', type=parse_str2int_list, default=512,
+                       help='Maximum output length for evaluation, e.g. 512')
 
     # LoRA group
     lora_group = parser.add_argument_group('LoRA', 'Low-Rank Adaptation parameters')
@@ -180,5 +182,9 @@ def parse_args():
                                         for target_module in args.target_modules):
             raise ValueError("Target modules must be specified as q_proj, k_proj, v_proj, o_proj, \
                              qkv_proj, gate_proj, down_proj or up_proj")
+        
+        if args.model_name and 'phi' in args.model_name.lower() and args.target_modules:
+            if any(module in ['q_proj', 'k_proj', 'v_proj'] for module in args.target_modules):
+                raise ValueError("For Microsoft's phi series models, use qkv_proj instead of q_proj, k_proj, v_proj")
     
     return args 
