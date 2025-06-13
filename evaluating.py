@@ -14,8 +14,6 @@ from transformers import AutoModelForCausalLM
 
 from utils.config import OPENCOMPASS_DIR, OUTPUT_DIR
 
-MAX_SEQ_LEN = 1024
-
 class LLMEvaluatingPipeline:
     """Manages the complete evaluation process including setup, running, and results processing."""
     
@@ -26,6 +24,7 @@ class LLMEvaluatingPipeline:
         self.model_config = None
         self.config_filename = None
         self.summary_dir = None
+        self.batch_size = None
         self.resume = resume
 
         if not self.resume:
@@ -61,45 +60,42 @@ class LLMEvaluatingPipeline:
             
             # Estimate memory per sequence
             bytes_per_token = 2  # bfloat16
-            seq_memory = MAX_SEQ_LEN * bytes_per_token * 3
+            seq_memory = self.config['max_out_len'] * bytes_per_token
 
             batch_size = math.ceil(available_memory / seq_memory)
                 
-            batch_size = int(max(1, batch_size - (3 if batch_size % 2 == 0 else 1)))
+            batch_size = int(max(1, batch_size))
             logger.success(f"Calculated batch size: {batch_size} (Available memory: {available_memory}MB)")
-            return batch_size
+            self.batch_size = batch_size
             
         except (RuntimeError, OSError, torch.cuda.CudaError) as e:
             logger.warning(f"Failed to determine optimal batch size: {str(e)}")
-            return 32  # fallback to default
+            self.batch_size = 32  # fallback to default
         
     def _get_model_config(self):
         """Generate model configuration for OpenCompass."""
         # Determine optimal batch size
-        batch_size = self._find_optimal_batch_size()
+        if not self.batch_size:
+            self._find_optimal_batch_size()
         peft_config = PeftConfig.from_pretrained(self.output_dir)
         
         try:
-            return {
-                'abbr': f"{self.config['model_name'].split('/')[1]}-{self.config['strategy']}",
-                'type': 'HuggingFacewithChatTemplate',
-                'path': peft_config.base_model_name_or_path,  # Use base model path
-                'model_kwargs': {
-                    'torch_dtype': 'torch.bfloat16' if self.config['bf16'] else 'torch.float32',
-                    'trust_remote_code': True,
-                },
-                # 'tokenizer_kwargs': {
-                #     'padding_side': 'left',
-                #     'truncation_side': 'left',
-                #     'trust_remote_code': True
-                # }, # Since this has been set in the default opencompass config
-                'peft_path': self.output_dir,  # Add LoRA adapter path
-                'max_out_len': MAX_SEQ_LEN,
-                'batch_size': batch_size,
-                'run_cfg': {'num_gpus': 1, 'num_procs': 1}, # TODO: change to multi-gpu
-            }
+            return dict(
+                abbr=f"{self.config['model_name'].split('/')[1]}-{self.config['strategy']}",
+                type="HuggingFacewithChatTemplate",
+                path=peft_config.base_model_name_or_path,
+                model_kwargs=dict(
+                    torch_dtype="torch.bfloat16",
+                    trust_remote_code=True,
+                ),
+                gen_config=dict(enable_thinking=self.config['enable_thinking']),
+                peft_path=self.output_dir,
+                max_out_len=self.config['max_out_len'],
+                batch_size=self.batch_size,
+                run_cfg=dict(num_gpus=1)
+            )
         except Exception as e:
-            logger.error("Failed to get model configuration: %s", str(e))
+            logger.error("Model configuration failed: %s", str(e))
             raise
 
     def opencompass_configuration(self):
@@ -109,52 +105,25 @@ class LLMEvaluatingPipeline:
         # Create model directory
         try:
             model_name = self.config['model_name'].split('/')[1].split('-')[0].lower()
-            eval_dir = os.path.join(OPENCOMPASS_DIR, 'opencompass', 'configs', 'models', model_name)
-            os.makedirs(eval_dir, exist_ok=True)
+            config_dir = os.path.join(OPENCOMPASS_DIR, 'opencompass', 'configs', 'models', model_name)
+            os.makedirs(config_dir, exist_ok=True)
         except Exception as e:
-            logger.error("Failed to create model directory in opencompass: %s", str(e))
+            logger.error("Model directory creation failed: %s", str(e))
             raise
 
         # Create model configuration file
         try:
             self.model_config = self._get_model_config()
             self.config_filename = f"{self.config['model_name'].split('/')[1]}.py"
-            file_path = os.path.join(eval_dir, self.config_filename)
+            file_path = os.path.join(config_dir, self.config_filename)
 
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write('from opencompass.models import HuggingFacewithChatTemplate\n')
                 file.write('import torch\n\n')
-                file.write('models = [\n')
-                file.write('    dict(\n')
-                for key, value in self.model_config.items():
-                    if isinstance(value, dict):
-                        file.write(f'        {key}=dict(\n')
-                        for k, v in value.items():
-                            if isinstance(v, str):
-                                file.write(f'            {k}="{v}",\n')
-                            else:
-                                file.write(f'            {k}={v},\n')
-                        file.write('        ),\n')
-                    else:
-                        if isinstance(value, str):
-                            file.write(f"        {key}='{value}',\n")
-                        else:
-                            file.write(f"        {key}={value},\n")
-                file.write('    ),\n')
-                file.write(']\n')
+                file.write(f'models = [{self.model_config}]\n')
         except Exception as e:
-            logger.error("Failed to create model configuration file: %s", str(e))
+            logger.error("Model configuration file creation failed: %s", str(e))
             raise
-
-        # Log evaluation configuration to wandb
-        wandb.log({
-            "evaluation_config": {
-                "model_name": self.config['model_name'].split('/')[1],
-                "strategy": self.config['strategy'],
-                "config_path": file_path,
-                "model_config": self.model_config
-            }
-        })
         
         logger.success("Opencompass configuration completed")
 
@@ -166,8 +135,9 @@ class LLMEvaluatingPipeline:
                 if os.path.isdir(os.path.join(self.eval_dir, d))
             ]
             if not eval_runs:
-                raise RuntimeError("No evaluation runs found")
-                
+                raise FileNotFoundError("No evaluation runs found")
+            
+            # Get the latest evaluation run
             latest_run = max(
                 eval_runs,
                 key=lambda x: os.path.getctime(os.path.join(self.eval_dir, x))
@@ -209,10 +179,14 @@ class LLMEvaluatingPipeline:
             dataset = row['dataset']
             metric = row['metric']
             mode = row['mode']
-            value = float(row[model_column])
+            value = float(row[model_column]) if row[model_column] != '-' else None
             
-            metric_name = f"eval/{dataset}-{mode}({metric})"
-            wandb.log({metric_name: value})
+            wandb.log({
+                f"eval_results/{dataset}": wandb.Table(
+                    columns=["metric", "mode", "model", "value"],
+                    data=[[metric, mode, model_column, value]]
+                )
+            })
             
         except KeyError as e:
             raise KeyError(f"Missing required column: {str(e)}") from e
@@ -233,13 +207,13 @@ class LLMEvaluatingPipeline:
             raise
             
         if not csv_files:
-            raise RuntimeError(f"No CSV files found in {self.summary_dir}")
+            raise FileNotFoundError(f"No CSV files found in {self.summary_dir}")
 
         for filename in csv_files:
             filepath = os.path.join(self.summary_dir, filename)
             self._process_csv_file(filepath)
                 
-        logger.success("All results processed successfully")
+        logger.success("All results processed")
 
     def evaluation(self):
         """Run the evaluation process."""
@@ -261,6 +235,19 @@ class LLMEvaluatingPipeline:
         except subprocess.CalledProcessError as e:
             logger.error("Evaluation failed: %s", e.stderr)
             raise
+        except torch.OutOfMemoryError as e:
+            logger.warning("CUDA out of memory: %s", str(e))
+            logger.info(f"Current batch size: {self.batch_size}, try reducing to {self.batch_size - 1}")
+            
+            if self.batch_size < 1:
+                logger.error("Batch size is too small, cannot reduce further, evaluation failed")
+                raise RuntimeError("Cannot find a suitable batch size to avoid OOM") from e
+            
+            self.batch_size -= 1
+            self.resume = True
+            logger.info("Reconfigure OpenCompass and retry evaluation...")
+            self.opencompass_configuration()
+            self.evaluation()
             
         logger.success("Evaluation completed")
     

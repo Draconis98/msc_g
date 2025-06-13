@@ -41,19 +41,14 @@ def setup_environment(seed=42, use_mirror=True):
 def main():
     """Main entry point of the application."""
     
-    try:
-        # Parse command line arguments
-        args = parse_args()
-        
-        # Setup environment (e.g., mirror configuration)
-        setup_environment(args.seed, args.use_mirror)
+    # Parse command line arguments
+    args = parse_args()
+    
+    # Setup environment (e.g., mirror configuration)
+    setup_environment(args.seed, args.use_mirror)
 
-        # Run the sweep
-        run(args)
-        
-    except Exception as e:
-        logger.error("An error occurred: %s", str(e))
-        raise
+    # Run the sweep
+    run(args)
 
 if __name__ == "__main__":
     main()

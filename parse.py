@@ -85,9 +85,9 @@ def setup_parser():
                        help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
     training_group.add_argument('--attn_implementation', type=str, default='sdpa',
                        help='Attention implementation, including sdpa, flash_attention_2 and eager')
-    training_group.add_argument('-bs', '--batch_size', type=parse_str2int_list, default=TRAINING_DEFAULTS['batch_size'],
+    training_group.add_argument('-bs', '--batch_size', type=parse_str2int_list, default=1,
                        help='Batch size(s) (comma-separated list or single integer, e.g. 1,2)')
-    training_group.add_argument('--warmup_ratio', type=parse_str2float_list, default=TRAINING_DEFAULTS['warmup_ratio'],
+    training_group.add_argument('--warmup_ratio', type=parse_str2float_list, default=0.03,
                        help='Warmup ratio(s) (comma-separated list or single float, e.g. 0.03,0.05)')
 
     # Evaluation group
@@ -109,8 +109,6 @@ def setup_parser():
     # Default training group
     default_group = parser.add_argument_group('Defaults', 'Optional training parameters with default values')
     for key, value in TRAINING_DEFAULTS.items():
-        if key in ['batch_size', 'warmup_ratio']:
-            continue  # Skip batch_size, it is already defined in training group
         default_group.add_argument(f'--{key}', type=type(value), default=value,
                           help=f'{key.replace("_", " ").title()} (default: {value})')
 
@@ -170,10 +168,12 @@ def parse_args():
         ]
         
         for _, param_value, param_desc in numeric_params:
-            if param_value and any(val < 1 for val in param_value):
+            if isinstance(param_value, list) and any(val < 1 for val in param_value) or \
+                isinstance(param_value, int) and param_value < 1:
                 raise ValueError(f"{param_desc} must be greater than 0 and must be specified as integer")
             
-        if args.learning_rate and any(lr <= 0 for lr in args.learning_rate):
+        if isinstance(args.learning_rate, list) and any(lr <= 0 for lr in args.learning_rate) or \
+            isinstance(args.learning_rate, float) and args.learning_rate <= 0:
             raise ValueError("Learning rate must be positive")
         
         if args.target_modules and \
@@ -183,8 +183,8 @@ def parse_args():
             raise ValueError("Target modules must be specified as q_proj, k_proj, v_proj, o_proj, \
                              qkv_proj, gate_proj, down_proj or up_proj")
         
-        if args.model_name and 'phi' in args.model_name.lower() and args.target_modules:
-            if any(module in ['q_proj', 'k_proj', 'v_proj'] for module in args.target_modules):
-                raise ValueError("For Microsoft's phi series models, use qkv_proj instead of q_proj, k_proj, v_proj")
+        # if args.model_name and 'phi' in args.model_name.lower() and args.target_modules:
+        #     if any(module in ['q_proj', 'k_proj', 'v_proj'] for module in args.target_modules):
+        #         raise ValueError("For Microsoft's phi series models, use qkv_proj instead of q_proj, k_proj, v_proj")
     
     return args 

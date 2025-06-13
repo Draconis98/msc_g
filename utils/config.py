@@ -12,12 +12,10 @@ OPENCOMPASS_DIR = os.path.join(BASE_DIR, "opencompass")
 # Training defaults
 TRAINING_DEFAULTS = {
     "learning_schedule": "cosine",
-    "batch_size": 1,
     "save_steps": 100,
     "save_total_limit": 8,
     "gradient_checkpointing": True,
     "gradient_accumulation_steps": 128,
-    "warmup_ratio": 0.03,
     "packing": False,
     "padding_free": False,
     "max_seq_length": 4096,
@@ -70,6 +68,7 @@ class ConfigManager:
 
             # Evaluation configuration
             'enable_thinking': wandb.config.enable_thinking,
+            'max_out_len': wandb.config.max_out_len,
             
             # Add seed configuration
             'seed': wandb.config.seed,

@@ -27,7 +27,7 @@ class Sweep:
             expected_run_count (int): The expected run count of the sweep.
         """
         self.args = args
-        self.sweep_id = args.sweep_id
+        self.sweep_id = None
         self.sweep_config = None
         self.sweep_path = None
         self.expected_run_count = None
@@ -51,7 +51,7 @@ class Sweep:
                         else getattr(self.args, key)}
                     for key in [
                         # Training strategy and model configuration
-                        'strategy', 'model_name', 'dataset', 'eval_dataset',
+                        'strategy', 'model_name', 'dataset', 'eval_dataset', 'learning_schedule',
                         # Batch processing and saving configuration
                         'save_steps', 'save_total_limit',
                         # Gradient and optimization configuration
@@ -82,23 +82,26 @@ class Sweep:
                 config['parameters']['learning_rate'] = {'min': min_lr, 'max': max_lr}
                 for param in ['batch_size', 'epochs', 'rank']:
                     param_value = getattr(self.args, param)
-                    config['parameters'][param] = {
-                        'values': [param_value] if isinstance(param_value, list) else [[param_value]]
-                    }
+                    if param_value is not None:
+                        config['parameters'][param] = {
+                            'values': param_value if isinstance(param_value, list) else [param_value]
+                        }
             else:
                 for param in ['learning_rate', 'batch_size', 'epochs', 'rank']:
-                    config['parameters'][param] = {
-                        'values': getattr(self.args, param)
-                    }
+                    param_value = getattr(self.args, param)
+                    if param_value is not None:
+                        config['parameters'][param] = {
+                            'values': param_value if isinstance(param_value, list) else [param_value]
+                        }
 
             # Handle target_modules separately
-            if self.args.strategy != 'fft':
+            if 'fft' not in self.args.strategy:
                 config['parameters']['target_modules'] = {
-                    'values': [self.args.target_modules] if isinstance(self.args.target_modules, list) else [[self.args.target_modules]]
+                    'values': [self.args.target_modules]
                 }
             
             config['parameters']['eval_dataset'] = {
-                'values': [self.args.eval_dataset] if isinstance(self.args.eval_dataset, list) else [[self.args.eval_dataset]]
+                'values': [self.args.eval_dataset]
             }
             
             self.sweep_config = config
@@ -117,7 +120,7 @@ class Sweep:
         try:
             self.sweep_id = wandb.sweep(self.sweep_config, project=self.sweep_config['project'])
         except Exception as e:
-            logger.error("Failed to setup sweep: %s", str(e))
+            logger.error(f"Failed to setup sweep: {str(e)}")
             raise
 
     def _get_expected_run_count(self):
@@ -144,7 +147,7 @@ class Sweep:
     def _start_agent(self):
         """Start a W&B agent on specified GPUs."""
         try:
-            wandb.agent(self.sweep_id, function=pipeline(debug=self.debug), project=self.sweep_config['project'])
+            wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
         except Exception as e:
             logger.error("Failed to start agent: %s", str(e))
             raise
