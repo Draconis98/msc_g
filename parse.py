@@ -39,67 +39,69 @@ def setup_parser():
         argparse.ArgumentParser: The argument parser.
     """
     parser = argparse.ArgumentParser(description="Process training parameters.")
-    parser.add_argument('--use_mirror', type=bool, default=True,
+    
+    # Base group
+    base_group = parser.add_argument_group('Base', 'Basic configuration parameters')
+    base_group.add_argument('--use_mirror', type=bool, default=True,
                        help='Use mirror for downloading models')
-    parser.add_argument('--seed', type=int, default=42,
+    base_group.add_argument('--seed', type=int, default=42,
                        help='Random seed')
-
-    # Resume configuration
-    parser.add_argument('--resume', type=bool, default=False,
-                       help='Resume training and evaluation')
-    parser.add_argument('--run_id', type=str, default=None,
-                       help='W&B Run ID')
-    args, _ = parser.parse_known_args()
-    if args.resume:
-        if args.run_id is None:
-            raise ValueError("Run ID is required when resuming")
-        parser.add_argument('-ed', '--eval_dataset', type=lambda x: x.split(','), default=None,
-                       help='Name of the evaluation dataset (comma-separated list, e.g. mmlu_gen,gsm8k_gen)')
-        return parser
-
-    
-    # Required arguments
-    parser.add_argument('-s', '--strategy', type=lambda x: x.split(','), required=True,
-                       help='Strategy to use (comma-separated list, e.g. fft,lora)')
-    parser.add_argument('-m', '--model_name', type=lambda x: x.split(','), required=True,
-                       help='Name of the model (comma-separated list, e.g. Qwen/Qwen3-0.6B,Qwen/Qwen2-0.5B)')
-    parser.add_argument('-d', '--dataset', type=str, required=True,
-                       help='Name of the dataset (format: huggingface_dataset_name, e.g. cais/mmlu)')
-    parser.add_argument('-lr', '--learning_rate', type=parse_str2float_list, required=True,
-                       help='Learning rate(s) (comma-separated list or single float, e.g. 1e-4,1e-5)')
-    parser.add_argument('-ed', '--eval_dataset', type=lambda x: x.split(','), required=True,
-                       help='Name of the evaluation dataset (comma-separated list, e.g. mmlu_gen,gsm8k_gen)')
-    parser.add_argument('-e', '--epochs', type=parse_str2int_list, required=True,
-                       help='Number of epochs (comma-separated list or single integer, e.g. 1,2)')
-    parser.add_argument('-tt', '--task_type', type=str, default=TASK_TYPES[0], choices=TASK_TYPES,
-                       help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, \
-                           TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
-    
-    # LoRA: Low-Rank Adaptation
-    parser.add_argument('-r', '--rank', type=parse_str2int_list, required=True, 
-                       help='Rank value (comma-separated list or single integer, e.g. 16,32)')
-    parser.add_argument('-t', '--target_modules', type=lambda x: x.split(','), required=True,
-                       help='Target modules (comma-separated list, e.g. q_proj,k_proj,v_proj)')
-    
-    # WandB
-    parser.add_argument('--wandb_project', type=str, required=True,
-                       help='WandB project name')
-    parser.add_argument('--wandb_entity', type=str, required=True,
-                       help='WandB entity name')
-    
-    parser.add_argument('--attn_implementation', type=str, default='sdpa',
-                       help='Attention implementation, including sdpa, flash_attention_2 and eager')
-    parser.add_argument('--enable_thinking', type=bool, default=False,
-                       help='Enable thinking for evaluation')
-    
-    # Optional arguments with defaults from config
-    for key, value in TRAINING_DEFAULTS.items():
-        parser.add_argument(f'--{key}', type=type(value), default=value,
-                          help=f'{key.replace("_", " ").title()} (default: {value})')
-    
-    parser.add_argument('--debug', type=bool, default=False,
+    base_group.add_argument('--debug', type=bool, default=False,
                        help='Debug mode')
-    
+
+    # Resume group
+    resume_group = parser.add_argument_group('Resume', 'Training resume configuration')
+    resume_group.add_argument('--resume', type=bool, default=False,
+                       help='Resume training and evaluation')
+    resume_group.add_argument('--run_id', type=str, default=None,
+                       help='W&B Run ID')
+
+    # WandB group
+    wandb_group = parser.add_argument_group('WandB', 'Weights & Biases configuration')
+    wandb_group.add_argument('--wandb_project', type=str,
+                       help='WandB project name')
+    wandb_group.add_argument('--wandb_entity', type=str,
+                       help='WandB entity name')
+    wandb_group.add_argument('--sweep_method', type=str, default='grid', choices=['grid', 'random', 'bayes'],
+                       help='Sweep method, including grid, random and bayes')
+
+    # Training group
+    training_group = parser.add_argument_group('Training', 'Model training configuration')
+    training_group.add_argument('-s', '--strategy', type=lambda x: x.split(','),
+                       help='Strategy to use (comma-separated list, e.g. fft,lora)')
+    training_group.add_argument('-m', '--model_name', type=lambda x: x.split(','),
+                       help='Name of the model (comma-separated list, e.g. Qwen/Qwen3-0.6B,Qwen/Qwen2-0.5B)')
+    training_group.add_argument('-d', '--dataset', type=str,
+                       help='Name of the dataset (format: huggingface_dataset_name, e.g. cais/mmlu)')
+    training_group.add_argument('-lr', '--learning_rate', type=parse_str2float_list,
+                       help='Learning rate(s) (comma-separated list or single float, e.g. 1e-4,1e-5)')
+    training_group.add_argument('-e', '--epochs', type=parse_str2int_list,
+                       help='Number of epochs (comma-separated list or single integer, e.g. 1,2)')
+    training_group.add_argument('-tt', '--task_type', type=str, default=TASK_TYPES[0], choices=TASK_TYPES,
+                       help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
+    training_group.add_argument('--attn_implementation', type=str, default='sdpa',
+                       help='Attention implementation, including sdpa, flash_attention_2 and eager')
+
+    # Evaluation group
+    eval_group = parser.add_argument_group('Evaluation', 'Model evaluation configuration')
+    eval_group.add_argument('-ed', '--eval_dataset', type=lambda x: x.split(','),
+                       help='Name of the evaluation dataset (comma-separated list, e.g. mmlu_gen,gsm8k_gen)')
+    eval_group.add_argument('--enable_thinking', type=bool, default=False,
+                       help='Enable thinking for evaluation')
+
+    # LoRA group
+    lora_group = parser.add_argument_group('LoRA', 'Low-Rank Adaptation parameters')
+    lora_group.add_argument('-r', '--rank', type=parse_str2int_list,
+                       help='Rank value (comma-separated list or single integer, e.g. 16,32)')
+    lora_group.add_argument('-t', '--target_modules', type=lambda x: x.split(','),
+                       help='Target modules (comma-separated list, e.g. q_proj,k_proj,v_proj)')
+
+    # Default training group
+    default_group = parser.add_argument_group('Defaults', 'Optional training parameters with default values')
+    for key, value in TRAINING_DEFAULTS.items():
+        default_group.add_argument(f'--{key}', type=type(value), default=value,
+                          help=f'{key.replace("_", " ").title()} (default: {value})')
+
     return parser
 
 def parse_args():
@@ -109,4 +111,33 @@ def parse_args():
         argparse.Namespace: The parsed command line arguments.
     """
     parser = setup_parser()
-    return parser.parse_args() 
+    args = parser.parse_args()
+    
+    # Validate resume mode requirements
+    if args.resume:
+        if args.run_id is None:
+            raise ValueError("Run ID is required when resuming")
+    else:
+        # Validate required parameters for non-resume mode
+        required_params = {
+            'wandb_project': 'WandB project name',
+            'wandb_entity': 'WandB entity name',
+            'strategy': 'Strategy',
+            'model_name': 'Model name',
+            'dataset': 'Dataset',
+            'learning_rate': 'Learning rate',
+            'epochs': 'Epochs',
+            'eval_dataset': 'Evaluation dataset',
+            'rank': 'LoRA rank',
+            'target_modules': 'LoRA target modules'
+        }
+        
+        missing_params = []
+        for param, description in required_params.items():
+            if getattr(args, param) is None:
+                missing_params.append(f'--{param} ({description})')
+        
+        if missing_params:
+            raise ValueError(f"The following required parameters are missing: {', '.join(missing_params)}")
+    
+    return args 
