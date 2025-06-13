@@ -64,6 +64,10 @@ def setup_parser():
                        help='WandB entity name')
     wandb_group.add_argument('--sweep_method', type=str, default='grid', choices=['grid', 'random', 'bayes'],
                        help='Sweep method, including grid, random and bayes')
+    wandb_group.add_argument('--sweep_metric', type=str, default='eval_accuracy',
+                       help='Sweep metric, including eval_loss, eval_accuracy, eval_f1, eval_rouge, eval_bleu, \
+                         eval_meteor, eval_bertscore, eval_rouge_l, eval_rouge_l_summary, eval_rouge_l_summary_f1, \
+                         eval_rouge_l_summary_recall, eval_rouge_l_summary_precision')
 
     # Training group
     training_group = parser.add_argument_group('Training', 'Model training configuration')
@@ -81,6 +85,8 @@ def setup_parser():
                        help='Task type, including CAUSAL_LM, SEQ_CLS, SEQ_2_SEQ_LM, TOKEN_CLS, QUESTION_ANS and FEATURE_EXTRACTION')
     training_group.add_argument('--attn_implementation', type=str, default='sdpa',
                        help='Attention implementation, including sdpa, flash_attention_2 and eager')
+    training_group.add_argument('-bs', '--batch_size', type=parse_str2int_list,
+                       help='Batch size(s) (comma-separated list or single integer, e.g. 1,2)')
 
     # Evaluation group
     eval_group = parser.add_argument_group('Evaluation', 'Model evaluation configuration')
@@ -99,6 +105,8 @@ def setup_parser():
     # Default training group
     default_group = parser.add_argument_group('Defaults', 'Optional training parameters with default values')
     for key, value in TRAINING_DEFAULTS.items():
+        if key == 'batch_size':
+            continue  # Skip batch_size, it is already defined in training group
         default_group.add_argument(f'--{key}', type=type(value), default=value,
                           help=f'{key.replace("_", " ").title()} (default: {value})')
 
@@ -128,9 +136,13 @@ def parse_args():
             'learning_rate': 'Learning rate',
             'epochs': 'Epochs',
             'eval_dataset': 'Evaluation dataset',
-            'rank': 'LoRA rank',
-            'target_modules': 'LoRA target modules'
         }
+
+        if 'fft' not in args.strategy:
+            required_params.update({
+                'rank': 'LoRA rank',
+                'target_modules': 'LoRA target modules'
+            })
         
         missing_params = []
         for param, description in required_params.items():
@@ -139,5 +151,32 @@ def parse_args():
         
         if missing_params:
             raise ValueError(f"The following required parameters are missing: {', '.join(missing_params)}")
+        
+        if args.sweep_method == 'bayes':
+            if len(args.learning_rate) < 2:
+                raise ValueError("When using bayes method, \
+                                 learning rate needs to specify maximum and minimum values, \
+                                 and will be optimized within the range")
+            
+        # Validate numeric parameters must be greater than 0
+        numeric_params = [
+            ('epochs', args.epochs, 'Epochs'),
+            ('rank', args.rank, 'Rank'),
+            ('batch_size', args.batch_size, 'Batch size')
+        ]
+        
+        for _, param_value, param_desc in numeric_params:
+            if param_value and any(val < 1 for val in param_value):
+                raise ValueError(f"{param_desc} must be greater than 0 and must be specified as integer")
+            
+        if args.learning_rate and any(lr <= 0 for lr in args.learning_rate):
+            raise ValueError("Learning rate must be positive")
+        
+        if args.target_modules and \
+            any(target_module not in ['q_proj', 'k_proj', 'v_proj', 'o_proj', \
+                                      'qkv_proj', 'gate_proj', 'down_proj', 'up_proj'] \
+                                        for target_module in args.target_modules):
+            raise ValueError("Target modules must be specified as q_proj, k_proj, v_proj, o_proj, \
+                             qkv_proj, gate_proj, down_proj or up_proj")
     
     return args 
