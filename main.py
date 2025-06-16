@@ -8,35 +8,25 @@ Usage:
 """
 
 import os
-import random
-import numpy as np
-import torch
 from loguru import logger
 
 from parse import parse_args
 from sweep import run
 
-def setup_environment(seed=42, use_mirror=True):
+def setup_environment(use_mirror=True):
     """Setup environment variables and configurations.
     
     Args:
-        seed (int): Random seed for reproducibility.
         use_mirror (bool): Whether to use mirror for downloading models.
     """
-
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    logger.info(f"Set seed to {seed}")
 
     if use_mirror:
         os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
         logger.info("Use mirror for downloading models")
     else:
         logger.warning("Use default endpoint for downloading models")
+
+
 
 def main():
     """Main entry point of the application."""
@@ -45,7 +35,7 @@ def main():
     args = parse_args()
     
     # Setup environment (e.g., mirror configuration)
-    setup_environment(args.seed, args.use_mirror)
+    setup_environment(args.use_mirror)
 
     # Run the sweep
     run(args)

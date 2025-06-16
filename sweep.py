@@ -80,14 +80,14 @@ class Sweep:
                 min_lr = min(self.args.learning_rate)
                 max_lr = max(self.args.learning_rate)
                 config['parameters']['learning_rate'] = {'min': min_lr, 'max': max_lr}
-                for param in ['batch_size', 'epochs', 'rank']:
+                for param in ['batch_size', 'epochs', 'rank', 'seed']:
                     param_value = getattr(self.args, param)
                     if param_value is not None:
                         config['parameters'][param] = {
                             'values': param_value if isinstance(param_value, list) else [param_value]
                         }
             else:
-                for param in ['learning_rate', 'batch_size', 'epochs', 'rank']:
+                for param in ['learning_rate', 'batch_size', 'epochs', 'rank', 'seed']:
                     param_value = getattr(self.args, param)
                     if param_value is not None:
                         config['parameters'][param] = {
@@ -147,7 +147,10 @@ class Sweep:
     def _start_agent(self):
         """Start a W&B agent on specified GPUs."""
         try:
-            wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
+            if self.sweep_config['method'] == 'grid':
+                wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'])
+            else:
+                wandb.agent(self.sweep_id, function=pipeline, project=self.sweep_config['project'], count=self.args.sweep_count)
         except Exception as e:
             logger.error("Failed to start agent: %s", str(e))
             raise

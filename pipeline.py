@@ -7,6 +7,9 @@ and processes the evaluation results.
 """
 
 import gc
+import random
+import numpy as np
+import os
 
 import torch
 import wandb
@@ -22,6 +25,15 @@ def cleanup_gpu_memory():
         torch.cuda.synchronize()
         torch.cuda.empty_cache()
     gc.collect()
+
+def setup_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    logger.info(f"Set seed to {seed}")
 
 def pipeline(resume=False, run_id=None, debug=False):
     """Main pipeline execution."""
@@ -50,6 +62,9 @@ def pipeline(resume=False, run_id=None, debug=False):
         except Exception as e:
             logger.error(f"Wandb resume failed: {e}")
             raise
+    
+    # Setup seed
+    setup_seed(config['seed'])
     
     # Run training pipeline
     try:

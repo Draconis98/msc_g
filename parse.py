@@ -44,8 +44,8 @@ def setup_parser():
     basic_group = parser.add_argument_group('Basic', 'Basic configuration parameters')
     basic_group.add_argument('--use_mirror', type=bool, default=True,
                        help='Use mirror for downloading models')
-    basic_group.add_argument('--seed', type=int, default=42,
-                       help='Random seed')
+    basic_group.add_argument('--seed', type=parse_str2int_list, default=42,
+                       help='Random seed (comma-separated list or single integer, e.g. 42,123)')
     basic_group.add_argument('--debug', type=bool, default=False,
                        help='Debug mode')
 
@@ -68,6 +68,8 @@ def setup_parser():
                        help='Sweep metric, including eval_loss, eval_accuracy, eval_f1, eval_rouge, eval_bleu, \
                          eval_meteor, eval_bertscore, eval_rouge_l, eval_rouge_l_summary, eval_rouge_l_summary_f1, \
                          eval_rouge_l_summary_recall, eval_rouge_l_summary_precision')
+    wandb_group.add_argument('--sweep_count', type=int, default=10,
+                       help='Maximum number of runs in sweep (default: 10)')
 
     # Training group
     training_group = parser.add_argument_group('Training', 'Model training configuration')
@@ -156,32 +158,38 @@ def parse_args():
         
         if args.sweep_method == 'bayes':
             if len(args.learning_rate) < 2:
-                raise ValueError("When using bayes method, \
-                                 learning rate needs to specify maximum and minimum values, \
-                                 and will be optimized within the range")
+                raise ValueError("When using bayes method, learning rate needs to specify maximum and minimum values, and will be optimized within the range")
+            if args.sweep_count < 1:
+                raise ValueError("Sweep count must be greater than 0")
             
         # Validate numeric parameters must be greater than 0
         numeric_params = [
             ('epochs', args.epochs, 'Epochs'),
             ('rank', args.rank, 'Rank'),
-            ('batch_size', args.batch_size, 'Batch size')
+            ('batch_size', args.batch_size, 'Batch size'),
+            ('seed', args.seed, 'Random seed')
         ]
         
         for _, param_value, param_desc in numeric_params:
             if isinstance(param_value, list) and any(val < 1 for val in param_value) or \
                 isinstance(param_value, int) and param_value < 1:
                 raise ValueError(f"{param_desc} must be greater than 0 and must be specified as integer")
-            
-        if isinstance(args.learning_rate, list) and any(lr <= 0 for lr in args.learning_rate) or \
-            isinstance(args.learning_rate, float) and args.learning_rate <= 0:
-            raise ValueError("Learning rate must be positive")
+        
+        float_params = [
+            ('learning_rate', args.learning_rate, 'Learning rate'),
+            ('warmup_ratio', args.warmup_ratio, 'Warmup ratio')
+        ]
+        
+        for _, param_value, param_desc in float_params:
+            if isinstance(param_value, list) and any(val <= 0 for val in param_value) or \
+                isinstance(param_value, float) and param_value <= 0:
+                raise ValueError(f"{param_desc} must be positive")
         
         if args.target_modules and \
             any(target_module not in ['q_proj', 'k_proj', 'v_proj', 'o_proj', \
                                       'qkv_proj', 'gate_proj', 'down_proj', 'up_proj'] \
                                         for target_module in args.target_modules):
-            raise ValueError("Target modules must be specified as q_proj, k_proj, v_proj, o_proj, \
-                             qkv_proj, gate_proj, down_proj or up_proj")
+            raise ValueError("Target modules must be specified as q_proj, k_proj, v_proj, o_proj, qkv_proj, gate_proj, down_proj or up_proj")
         
         # if args.model_name and 'phi' in args.model_name.lower() and args.target_modules:
         #     if any(module in ['q_proj', 'k_proj', 'v_proj'] for module in args.target_modules):
