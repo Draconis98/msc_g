@@ -182,10 +182,7 @@ class LLMEvaluatingPipeline:
             value = float(row[model_column]) if row[model_column] != '-' else None
             
             wandb.log({
-                f"eval_results/{dataset}": wandb.Table(
-                    columns=["metric", "mode", "model", "value"],
-                    data=[[metric, mode, model_column, value]]
-                )
+                f"eval_{metric}/{dataset}": value
             })
             
         except KeyError as e:
