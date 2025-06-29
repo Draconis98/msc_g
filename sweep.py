@@ -80,14 +80,14 @@ class Sweep:
                 min_lr = min(self.args.learning_rate)
                 max_lr = max(self.args.learning_rate)
                 config['parameters']['learning_rate'] = {'min': min_lr, 'max': max_lr}
-                for param in ['batch_size', 'epochs', 'rank', 'seed']:
+                for param in ['batch_size', 'epochs', 'rank', 'seed', 'lora_alpha']:
                     param_value = getattr(self.args, param)
                     if param_value is not None:
                         config['parameters'][param] = {
                             'values': param_value if isinstance(param_value, list) else [param_value]
                         }
             else:
-                for param in ['learning_rate', 'batch_size', 'epochs', 'rank', 'seed']:
+                for param in ['learning_rate', 'batch_size', 'epochs', 'rank', 'seed', 'lora_alpha', 'init_osora_weights', 'use_dora']:
                     param_value = getattr(self.args, param)
                     if param_value is not None:
                         config['parameters'][param] = {

@@ -60,7 +60,7 @@ class LLMEvaluatingPipeline:
             
             # Estimate memory per sequence
             bytes_per_token = 2  # bfloat16
-            seq_memory = self.config['max_out_len'] * bytes_per_token
+            seq_memory = self.config['max_out_len'] * bytes_per_token * 2
 
             batch_size = math.ceil(available_memory / seq_memory)
                 
@@ -230,21 +230,22 @@ class LLMEvaluatingPipeline:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8")
             logger.info(result.stdout)
         except subprocess.CalledProcessError as e:
-            logger.error("Evaluation failed: %s", e.stderr)
-            raise
-        except torch.OutOfMemoryError as e:
-            logger.warning("CUDA out of memory: %s", str(e))
-            logger.info(f"Current batch size: {self.batch_size}, try reducing to {self.batch_size - 1}")
-            
-            if self.batch_size < 1:
-                logger.error("Batch size is too small, cannot reduce further, evaluation failed")
-                raise RuntimeError("Cannot find a suitable batch size to avoid OOM") from e
-            
-            self.batch_size -= 1
-            self.resume = True
-            logger.info("Reconfigure OpenCompass and retry evaluation...")
-            self.opencompass_configuration()
-            self.evaluation()
+            if "CUDA out of memory" in e.stderr:
+                logger.warning("CUDA out of memory detected in subprocess.")
+                logger.info(f"Current batch size: {self.batch_size}, try reducing to {self.batch_size - 1}")
+                
+                if self.batch_size <= 1:
+                    logger.error("Batch size is 1, cannot reduce further, evaluation failed")
+                    raise RuntimeError("Cannot find a suitable batch size to avoid OOM") from e
+                
+                self.batch_size -= 1
+                self.resume = True
+                logger.info("Reconfigure OpenCompass and retry evaluation...")
+                self.opencompass_configuration()
+                self.evaluation()
+            else:
+                logger.error("Evaluation failed: %s", e.stderr)
+                raise
             
         logger.success("Evaluation completed")
     

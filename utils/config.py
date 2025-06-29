@@ -75,8 +75,15 @@ class ConfigManager:
         }
 
         if wandb.config.strategy != 'fft':
-            for param in ['target_modules', 'rank']:
-                config[param] = getattr(wandb.config, param)
+            if wandb.config.strategy == 'osora':
+                for param in ['target_modules', 'rank', 'init_osora_weights', 'use_dora']:
+                    config[param] = getattr(wandb.config, param)
+            elif wandb.config.strategy == 'vera':
+                for param in ['target_modules', 'rank']:
+                    config[param] = getattr(wandb.config, param)
+            else:
+                for param in ['target_modules', 'rank', 'lora_alpha']:
+                    config[param] = getattr(wandb.config, param)
         
         logger.success("Configuration created successfully")
         return config

@@ -10,7 +10,7 @@ from trl import SFTConfig, SFTTrainer
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig
 
 import wandb
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, VeraConfig, OSoraConfig, get_peft_model
 from utils.config import OUTPUT_DIR
 from data_processor import load_and_process_data
 
@@ -65,6 +65,7 @@ class TrainingPipeline:
         """Create a standardized run name from configuration."""
         name_components = [
             self.config['strategy'],
+            f"seed{self.config['seed']}",
             self.config['model_name'].split('/')[-1],
             self.config['task_type'].lower(),
             self.config['dataset'].split('/')[-1],
@@ -78,6 +79,13 @@ class TrainingPipeline:
         
         if self.config['strategy'] != 'fft':
             name_components.append(f"r{self.config['rank']}")
+            if self.config['strategy'] == 'osora':
+                name_components.append(f"init_osora_weights{self.config['init_osora_weights']}")
+                name_components.append(f"use_dora{self.config['use_dora']}")
+            elif self.config['strategy'] == 'vera':
+                pass
+            else:
+                name_components.append(f"lora_alpha{self.config['lora_alpha']}")
             
         if self.config['packing']:
             name_components.append("packed")
@@ -180,10 +188,26 @@ class TrainingPipeline:
             init_lora_weights=init_lora_weights,
             use_dora=True if self.config['strategy'] == 'dora' else False,
             r=self.config['rank'],
-            lora_alpha=self.config['rank'] \
-                if self.config['strategy'].startswith(('pissa')) or self.config['strategy'] == 'dude' \
-                else 2 * self.config['rank'],
+            lora_alpha=self.config['lora_alpha'],
             lora_dropout=0.0,
+            target_modules=self.config['target_modules'],
+            task_type=self.config['task_type'],
+        )
+    
+    def _get_osora_config(self):
+        """Create OSORA configuration based on training strategy."""
+        return OSoraConfig(
+            init_osora_weights=self.config['init_osora_weights'],
+            use_dora=self.config['use_dora'],
+            r=self.config['rank'],
+            target_modules=self.config['target_modules'],
+            task_type=self.config['task_type'],
+        )
+
+    def _get_vera_config(self):
+        """Create Vera configuration based on training strategy."""
+        return VeraConfig(
+            r=self.config['rank'],
             target_modules=self.config['target_modules'],
             task_type=self.config['task_type'],
         )
@@ -203,15 +227,26 @@ class TrainingPipeline:
             pretrained_model_name_or_path=self.config['model_name'], 
             **model_kwargs)
         
-        if self.config['strategy'] != 'fft':
-            lora_config = self._get_lora_config()
-            peft_model = get_peft_model(model, lora_config)
-
-            # Log LoRA configuration to wandb
-            if not self.resume:
-                wandb.config.update({"lora_config": lora_config.__dict__})
-        else:
+        # 根据策略配置PEFT模型 (Configure PEFT model based on strategy)
+        if self.config['strategy'] == 'fft':
             peft_model = model
+        else:
+            # 策略到配置方法的映射 (Strategy to config method mapping)
+            config_methods = {
+                'vera': self._get_vera_config,
+                'osora': self._get_osora_config
+            }
+            
+            # 获取配置并创建PEFT模型 (Get config and create PEFT model)
+            strategy = self.config['strategy']
+            config_method = config_methods.get(strategy, self._get_lora_config)
+            peft_config = config_method()
+            peft_model = get_peft_model(model, peft_config)
+            
+            # 记录配置到wandb (Log config to wandb)
+            if not self.resume:
+                config_name = f"{strategy}_config" if strategy in config_methods else "lora_config"
+                wandb.config.update({config_name: peft_config.__dict__})
         
         return peft_model
     
@@ -232,10 +267,9 @@ class TrainingPipeline:
         # Setup model
         model = self._setup_model()
 
-        if self.debug:
-            for name, param in model.named_parameters():
-                if param.requires_grad:
-                    logger.debug(f"{name} requires_grad: {param.requires_grad}")
+        # if self.debug:
+        # for name, param in model.named_parameters():
+            # logger.debug(f"{name} requires_grad: {param.requires_grad} shape: {param.shape}")
         
         # Setup training arguments
         training_args = self._get_training_args()

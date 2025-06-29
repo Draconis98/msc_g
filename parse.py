@@ -105,8 +105,19 @@ def setup_parser():
     lora_group = parser.add_argument_group('LoRA', 'Low-Rank Adaptation parameters')
     lora_group.add_argument('-r', '--rank', type=parse_str2int_list,
                        help='Rank value (comma-separated list or single integer, e.g. 16,32)')
+    lora_group.add_argument('--lora_alpha', type=parse_str2int_list, default=16,
+                       help='LoRA alpha value (comma-separated list or single integer, e.g. 16,32)')
     lora_group.add_argument('-t', '--target_modules', type=lambda x: x.split(','),
                        help='Target modules (comma-separated list, e.g. q_proj,k_proj,v_proj)')
+    
+    # OSORA group
+    osora_group = parser.add_argument_group('OSORA', 'Output-Dimension and Singular-Value Initialized Low-Rank Adaptation')
+    osora_group.add_argument('--init_osora_weights', type=str, default='default',
+                             choices=['default', 'in_features', 'zeros', 'gaussian', 'fix_o', 'fix_s'],
+                             help='OSORA initialization weights, including default, in_features, zeros, gaussian, fix_o, fix_s')
+    osora_group.add_argument('--use_dora', type=bool, default=False,
+                             help='Use DoRA for OSORA initialization')
+    
 
     # Default training group
     default_group = parser.add_argument_group('Defaults', 'Optional training parameters with default values')
@@ -145,6 +156,7 @@ def parse_args():
         if 'fft' not in args.strategy:
             required_params.update({
                 'rank': 'LoRA rank',
+                'lora_alpha': 'LoRA alpha',
                 'target_modules': 'LoRA target modules'
             })
         
@@ -167,7 +179,8 @@ def parse_args():
             ('epochs', args.epochs, 'Epochs'),
             ('rank', args.rank, 'Rank'),
             ('batch_size', args.batch_size, 'Batch size'),
-            ('seed', args.seed, 'Random seed')
+            ('seed', args.seed, 'Random seed'),
+            ('lora_alpha', args.lora_alpha, 'LoRA alpha')
         ]
         
         for _, param_value, param_desc in numeric_params:
